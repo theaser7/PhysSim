@@ -1,0 +1,407 @@
+[gd_scene format=3 uid="uid://b0qhudctrl01"]
+
+[ext_resource type="Script" path="res://scripts/ui/hud_controller.gd" id="1_hud"]
+[ext_resource type="Script" path="res://scripts/ui/model_dialog.gd" id="2_model"]
+
+[node name="HUD" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_hud")
+
+[node name="TopBar" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 54.0
+grow_horizontal = 2
+
+[node name="HBox" type="HBoxContainer" parent="TopBar"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Margin" type="Control" parent="TopBar/HBox"]
+custom_minimum_size = Vector2(8, 0)
+layout_mode = 2
+
+[node name="Title" type="Label" parent="TopBar/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.25, 0.85, 1, 1)
+text = "PHYSSIM // 3D LAB"
+
+[node name="VSep1" type="VSeparator" parent="TopBar/HBox"]
+layout_mode = 2
+
+[node name="BtnPreset1" type="Button" parent="TopBar/HBox"]
+layout_mode = 2
+text = "[1] Ship & Ocean"
+
+[node name="BtnPreset2" type="Button" parent="TopBar/HBox"]
+layout_mode = 2
+text = "[2] SPH Fluid"
+
+[node name="BtnPreset3" type="Button" parent="TopBar/HBox"]
+layout_mode = 2
+text = "[3] Wind Tunnel"
+
+[node name="BtnPreset4" type="Button" parent="TopBar/HBox"]
+layout_mode = 2
+text = "[4] Sandbox"
+
+[node name="Spacer" type="Control" parent="TopBar/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BtnCamMode" type="Button" parent="TopBar/HBox"]
+layout_mode = 2
+text = "CAM: ORBIT"
+
+[node name="BtnResetCam" type="Button" parent="TopBar/HBox"]
+layout_mode = 2
+text = "RESET CAM"
+
+[node name="MarginRight" type="Control" parent="TopBar/HBox"]
+custom_minimum_size = Vector2(8, 0)
+layout_mode = 2
+
+[node name="TelemetryPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -280.0
+offset_top = 64.0
+offset_right = -16.0
+offset_bottom = 230.0
+grow_horizontal = 0
+
+[node name="VBox" type="VBoxContainer" parent="TelemetryPanel"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Title" type="Label" parent="TelemetryPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.9, 1, 1)
+text = "TELEMETRY"
+
+[node name="HSep" type="HSeparator" parent="TelemetryPanel/VBox"]
+layout_mode = 2
+
+[node name="LblFPS" type="Label" parent="TelemetryPanel/VBox"]
+layout_mode = 2
+text = "FPS: 60.0 (16.6 ms)"
+
+[node name="LblWind" type="Label" parent="TelemetryPanel/VBox"]
+layout_mode = 2
+text = "Wind: 8.0 m/s @ 45 deg"
+
+[node name="LblParticles" type="Label" parent="TelemetryPanel/VBox"]
+layout_mode = 2
+text = "Particles / Verts: 0"
+
+[node name="LblEnergy" type="Label" parent="TelemetryPanel/VBox"]
+layout_mode = 2
+text = "Kinetic Energy: 0.0 J"
+
+[node name="LblStatus" type="Label" parent="TelemetryPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 0.9, 0.4, 1)
+text = "STATUS: RUNNING (1.0x)"
+
+[node name="PhysicsPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -280.0
+offset_top = 240.0
+offset_right = -16.0
+offset_bottom = 540.0
+grow_horizontal = 0
+
+[node name="VBox" type="VBoxContainer" parent="PhysicsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="PhysicsPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.9, 1, 1)
+text = "PHYSICS PARAMETERS"
+
+[node name="HSep" type="HSeparator" parent="PhysicsPanel/VBox"]
+layout_mode = 2
+
+[node name="GravityBox" type="VBoxContainer" parent="PhysicsPanel/VBox"]
+layout_mode = 2
+
+[node name="HBox" type="HBoxContainer" parent="PhysicsPanel/VBox/GravityBox"]
+layout_mode = 2
+
+[node name="Lbl" type="Label" parent="PhysicsPanel/VBox/GravityBox/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Gravity:"
+
+[node name="Val" type="Label" parent="PhysicsPanel/VBox/GravityBox/HBox"]
+layout_mode = 2
+text = "-9.8 m/s^2"
+
+[node name="Slider" type="HSlider" parent="PhysicsPanel/VBox/GravityBox"]
+layout_mode = 2
+min_value = -25.0
+max_value = 0.0
+step = 0.1
+value = -9.8
+
+[node name="WindSpeedBox" type="VBoxContainer" parent="PhysicsPanel/VBox"]
+layout_mode = 2
+
+[node name="HBox" type="HBoxContainer" parent="PhysicsPanel/VBox/WindSpeedBox"]
+layout_mode = 2
+
+[node name="Lbl" type="Label" parent="PhysicsPanel/VBox/WindSpeedBox/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Wind Speed:"
+
+[node name="Val" type="Label" parent="PhysicsPanel/VBox/WindSpeedBox/HBox"]
+layout_mode = 2
+text = "8.0 m/s"
+
+[node name="Slider" type="HSlider" parent="PhysicsPanel/VBox/WindSpeedBox"]
+layout_mode = 2
+max_value = 30.0
+step = 0.5
+value = 8.0
+
+[node name="WindDirBox" type="VBoxContainer" parent="PhysicsPanel/VBox"]
+layout_mode = 2
+
+[node name="HBox" type="HBoxContainer" parent="PhysicsPanel/VBox/WindDirBox"]
+layout_mode = 2
+
+[node name="Lbl" type="Label" parent="PhysicsPanel/VBox/WindDirBox/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Wind Angle:"
+
+[node name="Val" type="Label" parent="PhysicsPanel/VBox/WindDirBox/HBox"]
+layout_mode = 2
+text = "45 deg"
+
+[node name="Slider" type="HSlider" parent="PhysicsPanel/VBox/WindDirBox"]
+layout_mode = 2
+max_value = 360.0
+step = 5.0
+value = 45.0
+
+[node name="ViscosityBox" type="VBoxContainer" parent="PhysicsPanel/VBox"]
+layout_mode = 2
+
+[node name="HBox" type="HBoxContainer" parent="PhysicsPanel/VBox/ViscosityBox"]
+layout_mode = 2
+
+[node name="Lbl" type="Label" parent="PhysicsPanel/VBox/ViscosityBox/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Fluid Viscosity:"
+
+[node name="Val" type="Label" parent="PhysicsPanel/VBox/ViscosityBox/HBox"]
+layout_mode = 2
+text = "0.15"
+
+[node name="Slider" type="HSlider" parent="PhysicsPanel/VBox/ViscosityBox"]
+layout_mode = 2
+min_value = 0.01
+max_value = 1.5
+step = 0.01
+value = 0.15
+
+[node name="WaveAmpBox" type="VBoxContainer" parent="PhysicsPanel/VBox"]
+layout_mode = 2
+
+[node name="HBox" type="HBoxContainer" parent="PhysicsPanel/VBox/WaveAmpBox"]
+layout_mode = 2
+
+[node name="Lbl" type="Label" parent="PhysicsPanel/VBox/WaveAmpBox/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Wave Amplitude:"
+
+[node name="Val" type="Label" parent="PhysicsPanel/VBox/WaveAmpBox/HBox"]
+layout_mode = 2
+text = "0.8 m"
+
+[node name="Slider" type="HSlider" parent="PhysicsPanel/VBox/WaveAmpBox"]
+layout_mode = 2
+max_value = 2.5
+step = 0.1
+value = 0.8
+
+[node name="VisToggles" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -120.0
+offset_right = -16.0
+offset_bottom = -72.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="HBox" type="HBoxContainer" parent="VisToggles"]
+layout_mode = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="CheckVelVectors" type="CheckBox" parent="VisToggles/HBox"]
+layout_mode = 2
+button_pressed = true
+text = "Velocity Vectors"
+
+[node name="CheckAccVectors" type="CheckBox" parent="VisToggles/HBox"]
+layout_mode = 2
+text = "Acceleration / Thrust"
+
+[node name="CheckStreamlines" type="CheckBox" parent="VisToggles/HBox"]
+layout_mode = 2
+button_pressed = true
+text = "Wind Streamlines"
+
+[node name="CheckClothStress" type="CheckBox" parent="VisToggles/HBox"]
+layout_mode = 2
+button_pressed = true
+text = "Stress Heatmap"
+
+[node name="ControlBar" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -64.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="HBox" type="HBoxContainer" parent="ControlBar"]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="BtnPlayPause" type="Button" parent="ControlBar/HBox"]
+custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
+text = "PAUSE [||]"
+
+[node name="BtnStep" type="Button" parent="ControlBar/HBox"]
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 2
+text = "STEP [>|]"
+
+[node name="BtnReset" type="Button" parent="ControlBar/HBox"]
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 2
+text = "RESET [<<]"
+
+[node name="VSep" type="VSeparator" parent="ControlBar/HBox"]
+layout_mode = 2
+
+[node name="TimeScaleBox" type="HBoxContainer" parent="ControlBar/HBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Lbl" type="Label" parent="ControlBar/HBox/TimeScaleBox"]
+layout_mode = 2
+text = "Time Scale:"
+
+[node name="Slider" type="HSlider" parent="ControlBar/HBox/TimeScaleBox"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_vertical = 4
+min_value = 0.1
+max_value = 2.0
+step = 0.05
+value = 1.0
+
+[node name="Val" type="Label" parent="ControlBar/HBox/TimeScaleBox"]
+custom_minimum_size = Vector2(40, 0)
+layout_mode = 2
+text = "1.0x"
+
+[node name="ModelLoaderPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -340.0
+offset_right = 360.0
+offset_bottom = -136.0
+grow_vertical = 0
+script = ExtResource("2_model")
+
+[node name="VBox" type="VBoxContainer" parent="ModelLoaderPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="ModelLoaderPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.9, 1, 1)
+text = "MODEL PIPELINE (.STL / .BLEND)"
+
+[node name="HSep" type="HSeparator" parent="ModelLoaderPanel/VBox"]
+layout_mode = 2
+
+[node name="HBoxRole" type="HBoxContainer" parent="ModelLoaderPanel/VBox"]
+layout_mode = 2
+
+[node name="Lbl" type="Label" parent="ModelLoaderPanel/VBox/HBoxRole"]
+layout_mode = 2
+text = "Role:"
+
+[node name="OptRole" type="OptionButton" parent="ModelLoaderPanel/VBox/HBoxRole"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBoxLoaders" type="HBoxContainer" parent="ModelLoaderPanel/VBox"]
+layout_mode = 2
+
+[node name="BtnLoadSTL" type="Button" parent="ModelLoaderPanel/VBox/HBoxLoaders"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Import .STL"
+
+[node name="BtnLoadBlend" type="Button" parent="ModelLoaderPanel/VBox/HBoxLoaders"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Import .Blend"
+
+[node name="HBoxSamples" type="HBoxContainer" parent="ModelLoaderPanel/VBox"]
+layout_mode = 2
+
+[node name="BtnSampleHull" type="Button" parent="ModelLoaderPanel/VBox/HBoxSamples"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Sample Hull"
+
+[node name="BtnSampleWing" type="Button" parent="ModelLoaderPanel/VBox/HBoxSamples"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Sample Wing"
+
+[node name="LblLoadStatus" type="Label" parent="ModelLoaderPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.8, 0.9, 1)
+theme_override_font_sizes/font_size = 12
+text = "Select a file or sample to spawn"
+autowrap_mode = 2

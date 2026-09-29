@@ -1,0 +1,54 @@
+[gd_scene format=3 uid="uid://c4p4sandbox"]
+
+[ext_resource type="Script" path="res://scripts/presets/preset4_controller.gd" id="1_ctrl"]
+[ext_resource type="Script" path="res://scripts/physics/ocean_system.gd" id="2_ocean"]
+[ext_resource type="Script" path="res://scripts/physics/wind_field.gd" id="3_wind"]
+[ext_resource type="Script" path="res://scripts/visualization/streamline_visualizer.gd" id="4_stream"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_GridFloor"]
+albedo_color = Color(0.12, 0.14, 0.18, 1)
+roughness = 0.8
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_floor"]
+material = SubResource("Mat_GridFloor")
+size = Vector2(80, 80)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(80, 1, 80)
+
+[node name="Preset4_Sandbox" type="Node3D"]
+script = ExtResource("1_ctrl")
+
+[node name="WindField" type="Node" parent="."]
+script = ExtResource("3_wind")
+
+[node name="OceanSystem" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, 0)
+script = ExtResource("2_ocean")
+plane_size = 40.0
+mesh_subdivisions = 40
+
+[node name="Floor" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+mesh = SubResource("PlaneMesh_floor")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
+shape = SubResource("BoxShape3D_floor")
+
+[node name="SpawnPoint" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+
+[node name="SpawnedModels" type="Node3D" parent="."]
+
+[node name="StreamlineVisualizer" type="Node3D" parent="."]
+script = ExtResource("4_stream")
+seed_box_min = Vector3(-10, 0.5, -10)
+seed_box_max = Vector3(10, 6, 10)
+stream_count_x = 4
+stream_count_y = 3
+stream_count_z = 4
+steps_per_line = 18
+step_length = 0.7

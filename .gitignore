@@ -1,0 +1,21 @@
+# Godot 4 .gitignore
+.godot/*
+!.godot/global_script_class_cache.cfg
+*.translation
+
+# Build artifacts
+build/
+bin/
+*.exe
+*.pck
+
+# Blender temporary files
+*.blend1
+*.blend2
+__pycache__/
+*.pyc
+
+# IDE / OS
+.vscode/
+.idea/
+Thumbs.db

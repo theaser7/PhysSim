@@ -1,0 +1,61 @@
+class_name BlendLoader
+extends RefCounted
+
+## Loads .blend files at runtime by invoking headless Blender 5.2 and importing GLTF
+
+const BLENDER_DEFAULT_PATH = "C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe"
+
+static func load_blend_file(blend_path: String, custom_blender_path: String = "") -> Node3D:
+	var blender_exe = custom_blender_path if not custom_blender_path.is_empty() else BLENDER_DEFAULT_PATH
+	
+	if not FileAccess.file_exists(blender_exe):
+		push_error("[BlendLoader] Blender executable not found at: " + blender_exe)
+		return null
+
+	if not FileAccess.file_exists(blend_path):
+		push_error("[BlendLoader] Target .blend file not found: " + blend_path)
+		return null
+
+	# Temporary output path for GLB file
+	var temp_glb = ProjectSettings.globalize_path("user://temp_blend_import.glb")
+	var script_path = ProjectSettings.globalize_path("res://scripts/blender_export.py")
+	var abs_blend_path = ProjectSettings.globalize_path(blend_path)
+
+	print("[BlendLoader] Running headless Blender export...")
+	var output = []
+	var args = [
+		"--background",
+		abs_blend_path,
+		"--python",
+		script_path,
+		"--",
+		temp_glb
+	]
+
+	var exit_code = OS.execute(blender_exe, args, output, true)
+	if exit_code != 0:
+		push_error("[BlendLoader] Blender export failed with exit code: " + str(exit_code))
+		for line in output:
+			print(line)
+		return null
+
+	if not FileAccess.file_exists(temp_glb):
+		push_error("[BlendLoader] Exported GLB file was not created: " + temp_glb)
+		return null
+
+	print("[BlendLoader] Parsing exported GLB in Godot...")
+	var gltf_doc = GLTFDocument.new()
+	var gltf_state = GLTFState.new()
+	var err = gltf_doc.append_from_file(temp_glb, gltf_state)
+	
+	if err != OK:
+		push_error("[BlendLoader] GLTFDocument failed to parse GLB, error code: " + str(err))
+		return null
+
+	var scene_root = gltf_doc.generate_scene(gltf_state)
+	
+	# Clean up temp file
+	DirAccess.remove_absolute(temp_glb)
+	
+	print("[BlendLoader] Successfully imported scene from .blend!")
+	return scene_root

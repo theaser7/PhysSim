@@ -1,0 +1,104 @@
+[gd_scene format=3 uid="uid://c3p3windtunnel"]
+
+[ext_resource type="Script" path="res://scripts/presets/preset3_controller.gd" id="1_ctrl"]
+[ext_resource type="Script" path="res://scripts/physics/wind_field.gd" id="2_wind"]
+[ext_resource type="Script" path="res://scripts/physics/xpbd_cloth.gd" id="3_cloth"]
+[ext_resource type="Script" path="res://scripts/visualization/streamline_visualizer.gd" id="4_stream"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_TunnelGlass"]
+transparency = 1
+albedo_color = Color(0.6, 0.8, 1.0, 0.15)
+roughness = 0.15
+
+[sub_resource type="StandardMaterial3D" id="Mat_MetalFrame"]
+albedo_color = Color(0.25, 0.28, 0.32, 1)
+metallic = 0.8
+roughness = 0.35
+
+[sub_resource type="BoxMesh" id="BoxMesh_tunnel_wall_lr"]
+material = SubResource("Mat_TunnelGlass")
+size = Vector3(0.05, 3.6, 12.0)
+
+[sub_resource type="BoxMesh" id="BoxMesh_tunnel_wall_tb"]
+material = SubResource("Mat_TunnelGlass")
+size = Vector3(4.8, 0.05, 12.0)
+
+[sub_resource type="BoxMesh" id="BoxMesh_floor_base"]
+material = SubResource("Mat_MetalFrame")
+size = Vector3(5.2, 0.2, 12.4)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_post"]
+material = SubResource("Mat_MetalFrame")
+top_radius = 0.06
+bottom_radius = 0.06
+height = 3.2
+
+[node name="Preset3_WindTunnel" type="Node3D"]
+script = ExtResource("1_ctrl")
+
+[node name="WindField" type="Node" parent="."]
+script = ExtResource("2_wind")
+
+[node name="TunnelStructure" type="Node3D" parent="."]
+
+[node name="Base" type="MeshInstance3D" parent="TunnelStructure"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+mesh = SubResource("BoxMesh_floor_base")
+
+[node name="WallLeft" type="MeshInstance3D" parent="TunnelStructure"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.4, 1.8, 0)
+mesh = SubResource("BoxMesh_tunnel_wall_lr")
+
+[node name="WallRight" type="MeshInstance3D" parent="TunnelStructure"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.4, 1.8, 0)
+mesh = SubResource("BoxMesh_tunnel_wall_lr")
+
+[node name="Ceiling" type="MeshInstance3D" parent="TunnelStructure"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6, 0)
+mesh = SubResource("BoxMesh_tunnel_wall_tb")
+
+[node name="Floor" type="MeshInstance3D" parent="TunnelStructure"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+mesh = SubResource("BoxMesh_tunnel_wall_tb")
+
+[node name="PillarLeft" type="MeshInstance3D" parent="TunnelStructure"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6, 1.6, 0)
+mesh = SubResource("CylinderMesh_post")
+
+[node name="PillarRight" type="MeshInstance3D" parent="TunnelStructure"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6, 1.6, 0)
+mesh = SubResource("CylinderMesh_post")
+
+[node name="AnchorTopLeft" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6, 2.8, 0)
+
+[node name="AnchorTopRight" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6, 2.8, 0)
+
+[node name="AnchorBottomLeft" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6, 0.4, 0)
+
+[node name="AnchorBottomRight" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6, 0.4, 0)
+
+[node name="BannerCloth" type="Node3D" parent="." node_paths=PackedStringArray("anchor_top_left", "anchor_top_right")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+script = ExtResource("3_cloth")
+cloth_width = 3.2
+cloth_height = 2.4
+resolution_x = 15
+resolution_y = 12
+total_mass = 2.0
+solver_iterations = 7
+anchor_top_left = NodePath("../AnchorTopLeft")
+anchor_top_right = NodePath("../AnchorTopRight")
+
+[node name="StreamlineVisualizer" type="Node3D" parent="."]
+script = ExtResource("4_stream")
+seed_box_min = Vector3(-2.0, 0.4, -5.5)
+seed_box_max = Vector3(2.0, 3.2, -4.5)
+stream_count_x = 6
+stream_count_y = 5
+stream_count_z = 2
+steps_per_line = 24
+step_length = 0.5
