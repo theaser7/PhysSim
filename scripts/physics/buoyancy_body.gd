@@ -44,6 +44,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 
 	var rho = ocean_system.water_density
 	var g_acc = abs(SimState.gravity.y)
+	gravity_scale = g_acc / 9.81
 	var submerged_count = 0
 	var center_of_mass_world = state.transform.origin
 

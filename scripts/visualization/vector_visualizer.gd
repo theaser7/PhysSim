@@ -82,11 +82,16 @@ func _render_vectors() -> void:
 				if SimState.show_velocity_vectors and v.length_squared() > 0.05:
 					arrows.append({"origin": p, "vec": v * velocity_scale, "col": _mag_to_color(v.length(), 8.0)})
 
-	if arrows.is_empty():
+	var valid_arrows: Array[Dictionary] = []
+	for a in arrows:
+		if a["vec"].length() >= 0.05:
+			valid_arrows.append(a)
+
+	if valid_arrows.is_empty():
 		return
 
 	_immediate_mesh.surface_begin(Mesh.PRIMITIVE_LINES, _line_material)
-	for a in arrows:
+	for a in valid_arrows:
 		_draw_arrow(a["origin"], a["vec"], a["col"])
 	_immediate_mesh.surface_end()
 

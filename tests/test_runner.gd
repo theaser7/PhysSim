@@ -339,11 +339,27 @@ func test_live_ui_and_sliders() -> bool:
 		main_inst.queue_free()
 		return false
 
-	# Test presets cycle in live scene
+	# Test SVG icons present on transport buttons
+	if hud.btn_play_pause.icon == null or hud.btn_play_pause.text != "":
+		printerr("Play/Pause button should have SVG icon and empty text")
+		main_inst.queue_free()
+		return false
+	if hud.btn_reset.icon == null or hud.btn_step.icon == null:
+		printerr("Reset/Step buttons should have SVG icons")
+		main_inst.queue_free()
+		return false
+
+	# Test presets cycle and workspace tab stylebox swapping in live scene
 	for p in range(4):
 		SimState.set_preset(p)
 		await get_tree().process_frame
 		await get_tree().physics_frame
+		# Verify the active tab gets active stylebox
+		var active_tab = [hud.btn_preset_1, hud.btn_preset_2, hud.btn_preset_3, hud.btn_preset_4][p]
+		if active_tab.get_theme_stylebox("normal") != hud._style_tab_active:
+			printerr("Preset tab %d did not receive active stylebox!" % p)
+			main_inst.queue_free()
+			return false
 
 	main_inst.queue_free()
 	return true

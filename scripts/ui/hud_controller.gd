@@ -58,9 +58,16 @@ extends Control
 # Sandbox model loader panel
 @onready var model_panel: PanelContainer = $ModelLoaderPanel
 
+const ICON_PLAY = preload("res://icons/play.svg")
+const ICON_PAUSE = preload("res://icons/pause.svg")
+
 var _sim_time_accum: float = 0.0
+var _style_tab_active: StyleBox
+var _style_tab_inactive: StyleBox
 
 func _ready() -> void:
+	_style_tab_active = btn_preset_1.get_theme_stylebox("normal")
+	_style_tab_inactive = btn_preset_2.get_theme_stylebox("normal")
 	_connect_signals()
 	_update_ui_from_state()
 
@@ -128,8 +135,46 @@ func _update_telemetry() -> void:
 	if not telemetry_panel.visible:
 		return
 	lbl_sim_time.text = "%.2f s" % _sim_time_accum
-	lbl_particles.text = "%d" % SimState.active_particle_count
-	lbl_energy.text = "%.2f J" % SimState.total_kinetic_energy
+
+	var active_idx = SimState.active_preset_index
+	match active_idx:
+		0: # Ship & Ocean
+			var ship_ke = 0.0
+			var root = get_tree().current_scene
+			if root and root.has_node("PresetContainer"):
+				var pc = root.get_node("PresetContainer")
+				if pc.get_child_count() > 0:
+					var p1 = pc.get_child(0)
+					if p1.has_node("Ship"):
+						var ship = p1.get_node("Ship") as BuoyancyBody
+						if ship:
+							ship_ke = 0.5 * ship.mass * ship.linear_velocity.length_squared()
+			lbl_particles.text = "1 (Rigid Body)"
+			lbl_energy.text = "%.2f J" % ship_ke
+		1: # SPH Fluid
+			lbl_particles.text = "%d" % SimState.active_particle_count
+			lbl_energy.text = "%.2f J" % SimState.total_kinetic_energy
+		2: # Wind Tunnel
+			var cloth_ke = 0.0
+			var node_count = 180
+			var root = get_tree().current_scene
+			if root and root.has_node("PresetContainer"):
+				var pc = root.get_node("PresetContainer")
+				if pc.get_child_count() > 0:
+					var p3 = pc.get_child(0)
+					if p3.has_node("BannerCloth"):
+						var cloth = p3.get_node("BannerCloth") as XPBDCloth
+						if cloth and cloth.positions.size() > 0:
+							node_count = cloth.positions.size()
+							var pt_mass = cloth.total_mass / float(node_count)
+							for v in cloth.velocities:
+								cloth_ke += 0.5 * pt_mass * v.length_squared()
+			lbl_particles.text = "%d (Cloth Nodes)" % node_count
+			lbl_energy.text = "%.2f J" % cloth_ke
+		3: # Sandbox
+			lbl_particles.text = "%d" % SimState.active_particle_count
+			lbl_energy.text = "%.2f J" % SimState.total_kinetic_energy
+
 	lbl_wind.text = "%.1f m/s @ %d°" % [SimState.wind_speed, int(SimState.wind_direction_deg)]
 
 func _update_ui_from_state() -> void:
@@ -165,10 +210,12 @@ func _toggle_play_pause() -> void:
 
 func _update_play_pause_button() -> void:
 	if SimState.is_paused:
-		btn_play_pause.text = "▶"
+		btn_play_pause.icon = ICON_PLAY
+		btn_play_pause.text = ""
 		btn_play_pause.tooltip_text = "Resume Simulation (Space)"
 	else:
-		btn_play_pause.text = "⏸"
+		btn_play_pause.icon = ICON_PAUSE
+		btn_play_pause.text = ""
 		btn_play_pause.tooltip_text = "Pause Simulation (Space)"
 
 func _on_reset_requested() -> void:
@@ -222,7 +269,7 @@ func _on_wave_amp_changed(val: float) -> void:
 
 func _on_preset_changed(idx: int) -> void:
 	_sim_time_accum = 0.0
-	model_panel.visible = (idx == 3)
+	model_panel.visible = (idx == 0 or idx == 3)
 	_update_workspace_tabs(idx)
 
 func _update_workspace_tabs(idx: int) -> void:
@@ -230,8 +277,16 @@ func _update_workspace_tabs(idx: int) -> void:
 	for i in range(tabs.size()):
 		var tab = tabs[i]
 		if i == idx:
+			if _style_tab_active:
+				tab.add_theme_stylebox_override("normal", _style_tab_active)
+				tab.add_theme_stylebox_override("hover", _style_tab_active)
+				tab.add_theme_stylebox_override("pressed", _style_tab_active)
 			tab.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
-			tab.modulate = Color(1.2, 1.2, 1.3, 1.0)
+			tab.modulate = Color(1.15, 1.15, 1.2, 1.0)
 		else:
+			if _style_tab_inactive:
+				tab.add_theme_stylebox_override("normal", _style_tab_inactive)
+				tab.add_theme_stylebox_override("hover", _style_tab_inactive)
+				tab.add_theme_stylebox_override("pressed", _style_tab_inactive)
 			tab.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1.0))
-			tab.modulate = Color(0.85, 0.85, 0.85, 1.0)
+			tab.modulate = Color(0.9, 0.9, 0.9, 1.0)

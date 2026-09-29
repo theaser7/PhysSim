@@ -3,6 +3,11 @@
 [ext_resource type="Script" path="res://scripts/ui/hud_controller.gd" id="1_hud"]
 [ext_resource type="Theme" path="res://resources/blender_theme.tres" id="2_theme"]
 [ext_resource type="Script" path="res://scripts/ui/model_dialog.gd" id="3_model"]
+[ext_resource type="Texture2D" path="res://icons/play.svg" id="4_play"]
+[ext_resource type="Texture2D" path="res://icons/pause.svg" id="5_pause"]
+[ext_resource type="Texture2D" path="res://icons/step.svg" id="6_step"]
+[ext_resource type="Texture2D" path="res://icons/reset.svg" id="7_reset"]
+[ext_resource type="Texture2D" path="res://icons/dropdown.svg" id="8_dropdown"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_topbar"]
 content_margin_left = 12.0
@@ -107,11 +112,17 @@ size_flags_horizontal = 3
 
 [node name="BtnOverlays" type="Button" parent="TopBar/HBox"]
 layout_mode = 2
-text = "Overlays ▾"
+text = "Overlays "
+icon = ExtResource("8_dropdown")
+icon_alignment = 2
+expand_icon = true
 
 [node name="BtnTelemetry" type="Button" parent="TopBar/HBox"]
 layout_mode = 2
-text = "Telemetry ▾"
+text = "Telemetry "
+icon = ExtResource("8_dropdown")
+icon_alignment = 2
+expand_icon = true
 
 [node name="VSep2" type="VSeparator" parent="TopBar/HBox"]
 layout_mode = 2
@@ -130,9 +141,9 @@ layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -380.0
+offset_left = -492.0
 offset_top = 46.0
-offset_right = -170.0
+offset_right = -282.0
 offset_bottom = 200.0
 grow_horizontal = 0
 
@@ -173,7 +184,7 @@ layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -270.0
+offset_left = -272.0
 offset_top = 46.0
 offset_right = -12.0
 offset_bottom = 206.0
@@ -418,20 +429,26 @@ alignment = 0
 [node name="BtnReset" type="Button" parent="TransportBar/HBox"]
 custom_minimum_size = Vector2(36, 28)
 layout_mode = 2
-tooltip_text = "Reset Simulation"
-text = "⏮"
+tooltip_text = "Reset Simulation (R)"
+icon = ExtResource("7_reset")
+icon_alignment = 1
+expand_icon = true
 
 [node name="BtnPlayPause" type="Button" parent="TransportBar/HBox"]
 custom_minimum_size = Vector2(36, 28)
 layout_mode = 2
-tooltip_text = "Play / Pause"
-text = "⏸"
+tooltip_text = "Play / Pause (Space)"
+icon = ExtResource("5_pause")
+icon_alignment = 1
+expand_icon = true
 
 [node name="BtnStep" type="Button" parent="TransportBar/HBox"]
 custom_minimum_size = Vector2(36, 28)
 layout_mode = 2
 tooltip_text = "Step Next Frame"
-text = "⏭"
+icon = ExtResource("6_step")
+icon_alignment = 1
+expand_icon = true
 
 [node name="VSep" type="VSeparator" parent="TransportBar/HBox"]
 layout_mode = 2

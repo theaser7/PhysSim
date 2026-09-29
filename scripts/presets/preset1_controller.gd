@@ -18,6 +18,7 @@ func _ready() -> void:
 		streamlines.wind_field = wind
 
 	_setup_ship_model()
+	SimState.custom_model_loaded.connect(_on_custom_model_loaded)
 
 	# Hook into vector visualizer
 	var root = get_tree().current_scene
@@ -25,6 +26,28 @@ func _ready() -> void:
 		var vv = root.get_node("VectorVisualizer") as VectorVisualizer
 		vv.clear_tracked_objects()
 		vv.register_tracked_object(ship)
+
+func _on_custom_model_loaded(mesh: Mesh, _name: String, _role: String) -> void:
+	if not is_instance_valid(model_anchor) or mesh == null:
+		return
+	for child in model_anchor.get_children():
+		child.queue_free()
+
+	var mi = MeshInstance3D.new()
+	mi.name = "ShipCustomModelInstance"
+	mi.mesh = mesh
+	var mat = StandardMaterial3D.new()
+	mat.albedo_color = Color(0.62, 0.44, 0.28, 1.0)
+	mat.roughness = 0.55
+	mat.metallic = 0.05
+	mi.material_override = mat
+
+	var aabb = mesh.get_aabb()
+	var max_dim = max(aabb.size.x, max(aabb.size.y, aabb.size.z))
+	var s = 6.0 / max(max_dim, 0.01)
+	mi.scale = Vector3(s, s, s)
+	mi.position = -aabb.get_center() * s + Vector3(0, 0.2, 0)
+	model_anchor.add_child(mi)
 
 func _setup_ship_model() -> void:
 	# Load user-provided model if available

@@ -117,18 +117,18 @@ void fragment() {
 	float linear_depth = -view_pos.z;
 	float water_depth = max(linear_depth - (-VERTEX.z), 0.0);
 
-	// Refraction offset based on surface normal
-	vec2 refr_offset = NORMAL.xz * 0.025 * clamp(water_depth * 0.5, 0.1, 1.0);
+	// View-space refraction UV offset
+	vec2 refr_offset = vec2(NORMAL.x, -NORMAL.y) * 0.03 * clamp(water_depth * 0.4, 0.05, 1.0);
 	vec3 refracted_bg = textureLod(screen_texture, SCREEN_UV + refr_offset, 0.0).rgb;
 
 	// Beer-Lambert light absorption
-	float depth_factor = clamp(water_depth * 0.35, 0.0, 1.0);
+	float depth_factor = clamp(water_depth * 0.32, 0.0, 1.0);
 	vec3 deep_mix = mix(shallow_color.rgb, deep_color.rgb, depth_factor);
-	vec3 absorbed_water = mix(refracted_bg, deep_mix, clamp(depth_factor * 1.25, 0.35, 0.96));
+	vec3 absorbed_water = mix(refracted_bg, deep_mix, clamp(depth_factor * 1.25, 0.30, 0.98));
 
 	// Subsurface crest scattering
 	float crest_height = clamp((wave_crest + 0.3) / max(wave_amplitude_mult, 0.5), 0.0, 1.0);
-	vec3 water_color = mix(absorbed_water, scatter_color.rgb, crest_height * 0.35 * (1.0 - n_dot_v));
+	vec3 water_color = mix(absorbed_water, scatter_color.rgb, crest_height * 0.30 * (1.0 - n_dot_v));
 
 	// Foam calculation: Wave crest agitation + shoreline/hull contact foam
 	float crest_foam = smoothstep(foam_threshold * wave_amplitude_mult, (foam_threshold + 0.28) * wave_amplitude_mult, wave_crest);
@@ -142,11 +142,11 @@ void fragment() {
 	// Blend water surface with foam and sky reflection
 	vec3 final_color = mix(water_color, foam_color.rgb, foam_mask);
 	vec3 sky_reflection = vec3(0.75, 0.88, 1.0);
-	final_color = mix(final_color, sky_reflection, fresnel * 0.45 * (1.0 - foam_mask));
+	final_color = mix(final_color, sky_reflection, fresnel * 0.40 * (1.0 - foam_mask));
 
 	ALBEDO = final_color;
 	METALLIC = mix(metallic, 0.0, foam_mask);
 	ROUGHNESS = mix(roughness, 0.75, foam_mask);
-	SPECULAR = mix(0.9, 0.2, foam_mask);
-	ALPHA = mix(clamp(0.85 + depth_factor * 0.15, 0.85, 1.0), 1.0, foam_mask);
+	SPECULAR = mix(0.95, 0.2, foam_mask);
+	ALPHA = 1.0;
 }

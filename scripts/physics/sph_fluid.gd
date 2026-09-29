@@ -68,8 +68,8 @@ func _setup_multimesh() -> void:
 	var sphere = SphereMesh.new()
 	sphere.radius = particle_radius
 	sphere.height = particle_radius * 2.0
-	sphere.radial_segments = 16
-	sphere.rings = 8
+	sphere.radial_segments = 24
+	sphere.rings = 12
 	_multimesh.mesh = sphere
 
 	var mat = ShaderMaterial.new()
