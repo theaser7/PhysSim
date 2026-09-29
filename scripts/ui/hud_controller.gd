@@ -81,6 +81,9 @@ func _connect_signals() -> void:
 
 	# Popovers & Menus
 	btn_import_model.pressed.connect(_toggle_model_menu)
+	model_panel.visibility_changed.connect(func():
+		btn_import_model.modulate = Color(1.2, 1.2, 1.2) if model_panel.visible else Color(1.0, 1.0, 1.0)
+	)
 	btn_overlays.pressed.connect(_toggle_overlays_menu)
 	btn_telemetry.pressed.connect(_toggle_telemetry_menu)
 

@@ -65,8 +65,8 @@ static func parse_binary_stl(buffer: PackedByteArray, convert_z_up: bool = true)
 			var vy = sp.get_float()
 			var vz = sp.get_float()
 			if convert_z_up:
-				# Convert Blender / CAD Z-up to Godot Y-up: (x, z, -y)
-				raw_vertices[raw_idx] = Vector3(vx, vz, -vy)
+				# Convert Blender / CAD Z-up to Godot Y-up: (-x, z, y) so Mast is +Y, Bow is +Z, Stern is -Z
+				raw_vertices[raw_idx] = Vector3(-vx, vz, vy)
 			else:
 				raw_vertices[raw_idx] = Vector3(vx, vy, vz)
 			raw_idx += 1
@@ -89,7 +89,7 @@ static func parse_ascii_stl(text: String, convert_z_up: bool = true) -> ArrayMes
 				var vy = parts[2].to_float()
 				var vz = parts[3].to_float()
 				if convert_z_up:
-					raw_vertices.append(Vector3(vx, vz, -vy))
+					raw_vertices.append(Vector3(-vx, vz, vy))
 				else:
 					raw_vertices.append(Vector3(vx, vy, vz))
 
@@ -97,6 +97,9 @@ static func parse_ascii_stl(text: String, convert_z_up: bool = true) -> ArrayMes
 
 ## Welds duplicate vertices using spatial hashing, builds indices, and generates smooth normals
 static func weld_and_build_mesh(raw_vertices: PackedVector3Array) -> ArrayMesh:
+	var raw_count = raw_vertices.size()
+	if raw_count < 3:
+		return null
 	var unique_vertices: PackedVector3Array = []
 	var indices: PackedInt32Array = []
 	var vertex_lookup: Dictionary = {}
@@ -104,7 +107,6 @@ static func weld_and_build_mesh(raw_vertices: PackedVector3Array) -> ArrayMesh:
 	# Scale factor for quantization (1mm precision)
 	var quant: float = 1000.0
 
-	var raw_count = raw_vertices.size()
 	for i in range(raw_count):
 		var v = raw_vertices[i]
 		var key = "%d_%d_%d" % [int(round(v.x * quant)), int(round(v.y * quant)), int(round(v.z * quant))]

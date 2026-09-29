@@ -192,30 +192,30 @@ func test_sph_fluid() -> bool:
 		return false
 
 	var sph = SPHFluid.new()
-	sph.max_particles = 50
-	sph.initial_particle_count = 20
+	sph.max_particles = 300
+	sph.initial_particle_count = 250
 	sph.smoothing_radius = 0.35
 	sph._init_kernel_constants()
-	sph._grid = SPHGrid.new(sph.smoothing_radius, 512)
+	sph._grid = SPHGrid.new(sph.smoothing_radius, 1024)
 	sph._spawn_initial_particles()
 
-	if sph.positions.size() != 20:
+	if sph.positions.size() != 250:
 		printerr("SPH failed to spawn initial particles: ", sph.positions.size())
 		return false
 
-	sph._step_sph(0.01)
+	sph._step_sph(0.016)
 
 	if sph.densities[0] <= 0.0:
 		printerr("SPH density calculation failed, got: ", sph.densities[0])
 		return false
 
-	# Benchmark SPH steps performance
+	# Benchmark SPH steps performance with realistic 250-particle workload
 	var t0 = Time.get_ticks_msec()
 	for step in range(30):
-		sph._step_sph(0.01)
+		sph._step_sph(0.016)
 	var elapsed = Time.get_ticks_msec() - t0
-	if elapsed > 300:
-		printerr("SPH steps took too long: %d ms for 30 steps" % elapsed)
+	if elapsed > 450:
+		printerr("SPH steps took too long: %d ms for 30 steps of 250 particles" % elapsed)
 		return false
 
 	sph.queue_free()
@@ -303,6 +303,16 @@ func test_ship_stability() -> bool:
 			printerr("Ship capsized! Alignment to UP is: ", up_alignment)
 			inst.queue_free()
 			return false
+
+	# Test righting recovery when artificially perturbed with a 35-degree roll tilt
+	ship.rotate_object_local(Vector3.FORWARD, deg_to_rad(35.0))
+	for f in range(60):
+		await get_tree().physics_frame
+	var recovered_alignment = ship.global_transform.basis.y.dot(Vector3.UP)
+	if recovered_alignment < 0.8:
+		printerr("Ship failed to right itself after 35-degree tilt, alignment: ", recovered_alignment)
+		inst.queue_free()
+		return false
 
 	inst.queue_free()
 	return true

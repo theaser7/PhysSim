@@ -35,8 +35,9 @@ var _multimesh_instance: MultiMeshInstance3D
 var _multimesh: MultiMesh
 var _emitter_accumulator: float = 0.0
 
-# Pre-allocated neighbor cache per particle
-var _neighbors: Array[PackedInt32Array] = []
+# Pre-allocated flat neighbor cache per particle (zero per-frame heap allocations)
+var _neighbor_counts: PackedInt32Array = []
+var _neighbor_indices: PackedInt32Array = []
 
 # SPH Kernel Constants
 var _poly6_factor: float
@@ -163,8 +164,10 @@ func _step_sph(dt: float) -> void:
 	if n == 0:
 		return
 
-	if _neighbors.size() < n:
-		_neighbors.resize(max(n, 512))
+	if _neighbor_counts.size() < n:
+		var target_size = max(n, max_particles)
+		_neighbor_counts.resize(target_size)
+		_neighbor_indices.resize(target_size * 32)
 
 	# 1. Update Spatial Hash Grid
 	_grid.clear()
@@ -174,25 +177,27 @@ func _step_sph(dt: float) -> void:
 	# 2. Gather Neighbors & Compute Densities and Tait Pressures
 	for i in range(n):
 		var pi = positions[i]
-		var candidates = _grid.get_candidate_neighbors(pi)
+		var c_count = _grid.query_candidates(pi)
+		var c_buf = _grid.candidate_buffer
 		var rho = 0.0
-		var nbr_list = PackedInt32Array()
+		var nbr_offset = i * 32
 		var nbr_count = 0
 
-		for j in candidates:
+		for c in range(c_count):
+			var j = c_buf[c]
 			if i == j:
 				continue
 			var r_vec = pi - positions[j]
 			var r2 = r_vec.length_squared()
 			if r2 < _h2:
-				nbr_list.append(j)
+				_neighbor_indices[nbr_offset + nbr_count] = j
 				nbr_count += 1
 				var diff = _h2 - r2
 				rho += _poly6_mass * diff * diff * diff
 				if nbr_count >= 32:
 					break
 
-		_neighbors[i] = nbr_list
+		_neighbor_counts[i] = nbr_count
 		# Self-density contribution
 		rho += _poly6_mass * _h2 * _h2 * _h2
 		densities[i] = max(rho, rest_density * 0.5)
@@ -212,11 +217,11 @@ func _step_sph(dt: float) -> void:
 
 		var f_press = Vector3.ZERO
 		var f_visc = Vector3.ZERO
-		var neighbors = _neighbors[i]
-		var nbr_size = neighbors.size()
+		var nbr_offset = i * 32
+		var nbr_count = _neighbor_counts[i]
 
-		for k in range(nbr_size):
-			var j = neighbors[k]
+		for k in range(nbr_count):
+			var j = _neighbor_indices[nbr_offset + k]
 			var r_vec = pi - positions[j]
 			var r2 = r_vec.length_squared()
 			if r2 < 0.000001:

@@ -66,7 +66,8 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	var g_acc = abs(SimState.gravity.y)
 	gravity_scale = g_acc / 9.81
 	var submerged_count = 0
-	var center_of_mass_world = state.transform.origin
+	var com_world = state.transform * center_of_mass
+	var body_origin = state.transform.origin
 
 	for p_local in probe_points:
 		var p_world = global_transform * p_local
@@ -81,9 +82,9 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 			# Archimedes buoyant force: F = rho * V * g directed upwards / along wave normal
 			var f_buoyant = wave_normal * (rho * probe_volume * g_acc * sub_ratio)
 
-			# Point velocity relative to water orbital flow
-			var r = p_world - center_of_mass_world
-			var v_point = state.linear_velocity + state.angular_velocity.cross(r)
+			# Point velocity relative to water orbital flow (relative to center of mass)
+			var r_com = p_world - com_world
+			var v_point = state.linear_velocity + state.angular_velocity.cross(r_com)
 			var v_water = ocean_system.get_water_velocity(p_world)
 			var v_rel = v_point - v_water
 			var speed_rel = v_rel.length()
@@ -94,7 +95,9 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 			# Vertical damping to settle bouncing
 			f_drag.y -= v_rel.y * rho * 0.5 * probe_volume
 
-			state.apply_force(f_buoyant + f_drag, r)
+			# In Godot 4, apply_force position parameter is offset from body origin
+			var r_origin = p_world - body_origin
+			state.apply_force(f_buoyant + f_drag, r_origin)
 
 	# Keel lateral resistance (ships resist sideways drift, favoring forward surge)
 	if submerged_count > 0:
@@ -110,12 +113,12 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	var righting_axis = current_up.cross(world_up)
 
 	if righting_axis.length_squared() > 0.0001:
-		var righting_factor = 1.0 - alignment
-		var righting_torque = righting_axis.normalized() * (righting_stiffness * righting_factor)
+		var angle = acos(alignment)
+		var righting_torque = righting_axis.normalized() * (righting_stiffness * angle)
 		state.apply_torque(righting_torque)
 	elif alignment < 0.0:
 		# Upside down: nudge out of inverted equilibrium
-		state.apply_torque(global_transform.basis.z * righting_stiffness)
+		state.apply_torque(global_transform.basis.z * (righting_stiffness * PI))
 
 	# Angular hydrodynamic damping in water to suppress roll & pitch oscillations
 	if submerged_count > 0:

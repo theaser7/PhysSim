@@ -16,6 +16,7 @@ func reset_preset() -> void:
 	var existing = get_node_or_null("CustomModelInstance")
 	if existing:
 		existing.queue_free()
+	fluid.obstacle_spheres.clear()
 	fluid._spawn_initial_particles()
 
 func _on_custom_model_loaded(mesh: Mesh, _name: String, _role: String) -> void:
@@ -39,3 +40,6 @@ func _on_custom_model_loaded(mesh: Mesh, _name: String, _role: String) -> void:
 	mi.scale = Vector3(s, s, s)
 	mi.position = Vector3(0.0, 0.8, 0.0) - aabb.get_center() * s
 	add_child(mi)
+
+	var radius = max_dim * s * 0.45
+	fluid.obstacle_spheres = [Vector4(0.0, 0.8, 0.0, radius)]
