@@ -57,6 +57,13 @@ func _ready() -> void:
 		print("[FAIL] All Preset Scenes Instantiation")
 		failed += 1
 
+	if await test_step_frame_reset():
+		print("[PASS] Simulation Step & Pause State Management")
+		passed += 1
+	else:
+		print("[FAIL] Simulation Step & Pause State Management")
+		failed += 1
+
 	print("==========================================")
 	print("TESTS COMPLETED: %d PASSED, %d FAILED" % [passed, failed])
 	print("==========================================\n")
@@ -143,6 +150,18 @@ func test_sph_fluid() -> bool:
 		printerr("Spatial hash failed to find adjacent neighbors")
 		return false
 
+	# Test bucket deduplication on small table size collision
+	var small_grid = SPHGrid.new(1.0, 4)
+	small_grid.insert(0, Vector3(0, 0, 0))
+	var candidates = small_grid.get_candidate_neighbors(Vector3(0, 0, 0))
+	var count_0 = 0
+	for c in candidates:
+		if c == 0:
+			count_0 += 1
+	if count_0 != 1:
+		printerr("SPHGrid duplicated candidate neighbor on bucket collision! Count: ", count_0)
+		return false
+
 	var sph = SPHFluid.new()
 	sph.max_particles = 50
 	sph.initial_particle_count = 20
@@ -165,6 +184,12 @@ func test_sph_fluid() -> bool:
 	return true
 
 func test_stl_welding() -> bool:
+	# Test empty vertices returns null gracefully without crashing
+	var empty_mesh = STLLoader.weld_and_build_mesh(PackedVector3Array())
+	if empty_mesh != null:
+		printerr("Expected null for empty vertices")
+		return false
+
 	var raw = PackedVector3Array([
 		Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0),
 		Vector3(1, 0, 0), Vector3(1, 1, 0), Vector3(0, 1, 0)
@@ -208,5 +233,22 @@ func test_preset_scenes() -> bool:
 			printerr("Failed to instantiate scene: ", path)
 			return false
 		inst.free()
+
+	return true
+
+func test_step_frame_reset() -> bool:
+	SimState.is_paused = true
+	SimState.request_step()
+	if not SimState.step_frame_requested:
+		printerr("step_frame_requested was not set to true after request_step")
+		return false
+
+	# Wait for physics frame to finish
+	await get_tree().physics_frame
+	await get_tree().process_frame
+
+	if SimState.step_frame_requested:
+		printerr("step_frame_requested was NOT reset to false after physics frame!")
+		return false
 
 	return true

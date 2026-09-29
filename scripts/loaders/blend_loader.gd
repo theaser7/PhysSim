@@ -18,7 +18,15 @@ static func load_blend_file(blend_path: String, custom_blender_path: String = ""
 
 	# Temporary output path for GLB file
 	var temp_glb = ProjectSettings.globalize_path("user://temp_blend_import.glb")
-	var script_path = ProjectSettings.globalize_path("res://scripts/blender_export.py")
+	var script_user_path = "user://blender_export.py"
+	if not FileAccess.file_exists(script_user_path):
+		var src_script = FileAccess.get_file_as_string("res://scripts/blender_export.py")
+		var out_file = FileAccess.open(script_user_path, FileAccess.WRITE)
+		if out_file:
+			out_file.store_string(src_script)
+			out_file.close()
+
+	var script_path = ProjectSettings.globalize_path(script_user_path)
 	var abs_blend_path = ProjectSettings.globalize_path(blend_path)
 
 	print("[BlendLoader] Running headless Blender export...")

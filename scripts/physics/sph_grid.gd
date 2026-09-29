@@ -28,7 +28,7 @@ func clear() -> void:
 
 func _hash_coords(cx: int, cy: int, cz: int) -> int:
 	var h = (cx * PRIME_X) ^ (cy * PRIME_Y) ^ (cz * PRIME_Z)
-	return abs(h) % table_size
+	return posmod(h, table_size)
 
 func insert(particle_idx: int, pos: Vector3) -> void:
 	var cx = int(floor(pos.x * inv_cell_size))
@@ -44,10 +44,14 @@ func get_candidate_neighbors(pos: Vector3) -> Array:
 	var cz = int(floor(pos.z * inv_cell_size))
 
 	var candidates: Array = []
+	var visited_buckets: Array[int] = []
 	for dx in range(-1, 2):
 		for dy in range(-1, 2):
 			for dz in range(-1, 2):
 				var bucket = _hash_coords(cx + dx, cy + dy, cz + dz)
+				if visited_buckets.has(bucket):
+					continue
+				visited_buckets.append(bucket)
 				var cell_particles = _grid[bucket]
 				var count = cell_particles.size()
 				for k in range(count):

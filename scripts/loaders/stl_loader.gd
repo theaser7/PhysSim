@@ -12,7 +12,7 @@ static func load_stl_file(file_path: String) -> ArrayMesh:
 	var buffer = file.get_buffer(file.get_length())
 	file.close()
 
-	if buffer.size() < 84:
+	if buffer.size() < 6:
 		push_error("[STLLoader] File too small to be valid STL")
 		return null
 
@@ -111,6 +111,10 @@ static func weld_and_build_mesh(raw_vertices: PackedVector3Array) -> ArrayMesh:
 			indices.append(new_idx)
 
 	var num_unique = unique_vertices.size()
+	if num_unique < 3 or indices.size() < 3:
+		push_warning("[STLLoader] Insufficient vertices or indices to construct a mesh surface")
+		return null
+
 	var normals: PackedVector3Array = []
 	normals.resize(num_unique)
 	normals.fill(Vector3.ZERO)

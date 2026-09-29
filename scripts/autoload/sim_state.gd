@@ -56,6 +56,12 @@ func request_step() -> void:
 	step_frame_requested = true
 	is_paused = true
 	step_executed.emit()
+	_clear_step_frame()
+
+func _clear_step_frame() -> void:
+	if get_tree():
+		await get_tree().physics_frame
+	step_frame_requested = false
 
 func request_reset() -> void:
 	reset_current_preset.emit()

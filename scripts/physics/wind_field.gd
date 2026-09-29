@@ -48,19 +48,16 @@ func get_wind_velocity(pos: Vector3) -> Vector3:
 	
 	# Finite differences to calculate curl: curl(A) = (dAz/dy - dAy/dz, dAx/dz - dAz/dx, dAy/dx - dAx/dy)
 	var eps = 0.1
-	var ay_p = noise_y.get_noise_3d(p.x, p.y + eps, p.z)
-	var ay_m = noise_y.get_noise_3d(p.x, p.y - eps, p.z)
-	var az_p = noise_z.get_noise_3d(p.x, p.y, p.z + eps)
-	var az_m = noise_z.get_noise_3d(p.x, p.y, p.z - eps)
-	var ax_p = noise_x.get_noise_3d(p.x + eps, p.y, p.z)
-	var ax_m = noise_x.get_noise_3d(p.x - eps, p.y, p.z)
+	var inv_2eps = 1.0 / (2.0 * eps)
 	
-	var dAz_dy = (noise_z.get_noise_3d(p.x, p.y + eps, p.z) - noise_z.get_noise_3d(p.x, p.y - eps, p.z)) / (2.0 * eps)
-	var dAy_dz = (az_p - az_m) / (2.0 * eps)
-	var dAx_dz = (noise_x.get_noise_3d(p.x, p.y, p.z + eps) - noise_x.get_noise_3d(p.x, p.y, p.z - eps)) / (2.0 * eps)
-	var dAz_dx = (noise_z.get_noise_3d(p.x + eps, p.y, p.z) - noise_z.get_noise_3d(p.x - eps, p.y, p.z)) / (2.0 * eps)
-	var dAy_dx = (noise_y.get_noise_3d(p.x + eps, p.y, p.z) - noise_y.get_noise_3d(p.x - eps, p.y, p.z)) / (2.0 * eps)
-	var dAx_dy = (ax_p - ax_m) / (2.0 * eps)
+	var dAz_dy = (noise_z.get_noise_3d(p.x, p.y + eps, p.z) - noise_z.get_noise_3d(p.x, p.y - eps, p.z)) * inv_2eps
+	var dAy_dz = (noise_y.get_noise_3d(p.x, p.y, p.z + eps) - noise_y.get_noise_3d(p.x, p.y, p.z - eps)) * inv_2eps
+	
+	var dAx_dz = (noise_x.get_noise_3d(p.x, p.y, p.z + eps) - noise_x.get_noise_3d(p.x, p.y, p.z - eps)) * inv_2eps
+	var dAz_dx = (noise_z.get_noise_3d(p.x + eps, p.y, p.z) - noise_z.get_noise_3d(p.x - eps, p.y, p.z)) * inv_2eps
+	
+	var dAy_dx = (noise_y.get_noise_3d(p.x + eps, p.y, p.z) - noise_y.get_noise_3d(p.x - eps, p.y, p.z)) * inv_2eps
+	var dAx_dy = (noise_x.get_noise_3d(p.x, p.y + eps, p.z) - noise_x.get_noise_3d(p.x, p.y - eps, p.z)) * inv_2eps
 	
 	var curl = Vector3(
 		dAz_dy - dAy_dz,
