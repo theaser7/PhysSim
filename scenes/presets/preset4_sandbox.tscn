@@ -22,12 +22,6 @@ script = ExtResource("1_ctrl")
 [node name="WindField" type="Node" parent="."]
 script = ExtResource("3_wind")
 
-[node name="OceanSystem" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, 0)
-script = ExtResource("2_ocean")
-plane_size = 40.0
-mesh_subdivisions = 40
-
 [node name="Floor" type="StaticBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 

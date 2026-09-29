@@ -5,8 +5,8 @@ const SPHGrid = preload("res://scripts/physics/sph_grid.gd")
 
 ## Real-time 3D SPH (Smoothed Particle Hydrodynamics) fluid simulation with container collisions and pouring emitter
 
-@export var max_particles: int = 800
-@export var initial_particle_count: int = 400
+@export var max_particles: int = 600
+@export var initial_particle_count: int = 300
 @export var particle_radius: float = 0.12
 @export var smoothing_radius: float = 0.35
 @export var particle_mass: float = 0.025
@@ -14,7 +14,7 @@ const SPHGrid = preload("res://scripts/physics/sph_grid.gd")
 @export var gas_stiffness: float = 250.0
 @export var restitution: float = 0.3
 @export var emitter_active: bool = true
-@export var emitter_rate: float = 35.0 # particles/second
+@export var emitter_rate: float = 25.0 # particles/second
 
 # Container boundary box (local space)
 @export var bounds_min: Vector3 = Vector3(-1.2, 0.0, -1.2)
@@ -35,10 +35,16 @@ var _multimesh_instance: MultiMeshInstance3D
 var _multimesh: MultiMesh
 var _emitter_accumulator: float = 0.0
 
+# Pre-allocated neighbor cache per particle
+var _neighbors: Array[PackedInt32Array] = []
+
 # SPH Kernel Constants
 var _poly6_factor: float
 var _spiky_grad_factor: float
 var _visc_lap_factor: float
+var _poly6_mass: float
+var _spiky_grad_mass: float
+var _visc_lap_mass: float
 var _h2: float
 
 func _ready() -> void:
@@ -54,6 +60,9 @@ func _init_kernel_constants() -> void:
 	_poly6_factor = 315.0 / (64.0 * pi * pow(h, 9))
 	_spiky_grad_factor = -45.0 / (pi * pow(h, 6))
 	_visc_lap_factor = 45.0 / (pi * pow(h, 6))
+	_poly6_mass = particle_mass * _poly6_factor
+	_spiky_grad_mass = particle_mass * _spiky_grad_factor
+	_visc_lap_mass = particle_mass * _visc_lap_factor
 
 func _setup_multimesh() -> void:
 	_multimesh_instance = MultiMeshInstance3D.new()
@@ -141,8 +150,8 @@ func _physics_process(delta: float) -> void:
 			)
 			_add_particle(spout_pos, spout_vel)
 
-	# Substep for numerical stability (2 sub-steps)
-	var substeps = 2
+	# Adaptive substepping (1 substep at 60 Hz standard tick, 2 if frame time exceeds threshold)
+	var substeps = 1 if dt <= 0.02 else 2
 	var sub_dt = dt / float(substeps)
 	for s in range(substeps):
 		_step_sph(sub_dt)
@@ -154,31 +163,45 @@ func _step_sph(dt: float) -> void:
 	if n == 0:
 		return
 
+	if _neighbors.size() < n:
+		_neighbors.resize(max(n, 512))
+
 	# 1. Update Spatial Hash Grid
 	_grid.clear()
 	for i in range(n):
 		_grid.insert(i, positions[i])
 
-	# 2. Compute Densities & Pressures
+	# 2. Gather Neighbors & Compute Densities and Tait Pressures
 	for i in range(n):
 		var pi = positions[i]
-		var neighbors = _grid.get_candidate_neighbors(pi)
+		var candidates = _grid.get_candidate_neighbors(pi)
 		var rho = 0.0
+		var nbr_list = PackedInt32Array()
+		var nbr_count = 0
 
-		for j in neighbors:
+		for j in candidates:
+			if i == j:
+				continue
 			var r_vec = pi - positions[j]
 			var r2 = r_vec.length_squared()
 			if r2 < _h2:
+				nbr_list.append(j)
+				nbr_count += 1
 				var diff = _h2 - r2
-				rho += particle_mass * _poly6_factor * diff * diff * diff
+				rho += _poly6_mass * diff * diff * diff
+				if nbr_count >= 32:
+					break
 
+		_neighbors[i] = nbr_list
+		# Self-density contribution
+		rho += _poly6_mass * _h2 * _h2 * _h2
 		densities[i] = max(rho, rest_density * 0.5)
-		# Tait EOS: P = k * (rho - rho0)
 		pressures[i] = max(0.0, gas_stiffness * (densities[i] - rest_density))
 
-	# 3. Compute Forces (Pressure Gradient + Viscosity + Gravity + Wind)
+	# 3. Compute Forces using pre-gathered neighbor lists
 	var gravity_acc = SimState.gravity
 	var visc = SimState.fluid_viscosity
+	var visc_mult = visc * _visc_lap_mass
 	var h = smoothing_radius
 
 	for i in range(n):
@@ -189,29 +212,27 @@ func _step_sph(dt: float) -> void:
 
 		var f_press = Vector3.ZERO
 		var f_visc = Vector3.ZERO
-		var neighbors = _grid.get_candidate_neighbors(pi)
+		var neighbors = _neighbors[i]
+		var nbr_size = neighbors.size()
 
-		for j in neighbors:
-			if i == j:
-				continue
-
+		for k in range(nbr_size):
+			var j = neighbors[k]
 			var r_vec = pi - positions[j]
-			var dist = r_vec.length()
-			if dist < h and dist > 0.0001:
-				var dir = r_vec / dist
-				var h_dist = h - dist
-				var rho_j = densities[j]
-				var p_j = pressures[j]
+			var r2 = r_vec.length_squared()
+			if r2 < 0.000001:
+				continue
+			var dist = sqrt(r2)
+			var h_dist = h - dist
+			var rho_j = densities[j]
+			var p_j = pressures[j]
 
-				# Spiky kernel gradient: -45 / (pi * h^6) * (h - r)^2 * (r / |r|)
-				var grad_w = _spiky_grad_factor * h_dist * h_dist * dir
-				# Symmetric pressure force formulation
-				f_press -= dir * (particle_mass * (p_i + p_j) / (2.0 * rho_j) * _spiky_grad_factor * h_dist * h_dist)
+			# Spiky kernel gradient: direct vector scaling
+			var p_scalar = (_spiky_grad_mass * (p_i + p_j) / (2.0 * rho_j) * h_dist * h_dist) / dist
+			f_press -= r_vec * p_scalar
 
-				# Viscosity laplacian: 45 / (pi * h^6) * (h - r)
-				var lap_w = _visc_lap_factor * h_dist
-				var v_diff = velocities[j] - vi
-				f_visc += v_diff * (visc * particle_mass / rho_j * lap_w)
+			# Viscosity laplacian
+			var visc_scalar = visc_mult / rho_j * h_dist
+			f_visc += (velocities[j] - vi) * visc_scalar
 
 		var total_force = f_press + f_visc
 		accelerations[i] = (total_force / rho_i) + gravity_acc
@@ -310,10 +331,9 @@ func _update_multimesh() -> void:
 	var count = positions.size()
 	_multimesh.visible_instance_count = count
 
+	var t = Transform3D.IDENTITY
 	for i in range(count):
-		var t = Transform3D()
 		t.origin = positions[i]
 		_multimesh.set_instance_transform(i, t)
-		# Pass velocity vector in COLOR for foam / speed highlight
 		var vel = velocities[i]
 		_multimesh.set_instance_color(i, Color(vel.x, vel.y, vel.z, 1.0))

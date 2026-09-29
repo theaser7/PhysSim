@@ -92,11 +92,12 @@ script = ExtResource("3_wind")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
 mass = 1200.0
 center_of_mass_mode = 1
-center_of_mass = Vector3(0, -0.4, 0)
+center_of_mass = Vector3(0, -0.8, 0)
 script = ExtResource("4_ship")
-total_buoyant_volume = 5.2
+total_buoyant_volume = 5.6
 water_drag_coeff = 1.4
-righting_stiffness = 400.0
+righting_stiffness = 1200.0
+roll_pitch_damping = 25.0
 keel_lateral_drag = 6.0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Ship"]

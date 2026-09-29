@@ -74,10 +74,11 @@ mesh = SubResource("BoxMesh_corner_post")
 
 [node name="SPHFluid" type="Node3D" parent="."]
 script = ExtResource("2_sph")
-max_particles = 700
-initial_particle_count = 350
+max_particles = 500
+initial_particle_count = 250
 particle_radius = 0.11
 smoothing_radius = 0.32
 particle_mass = 0.022
+emitter_rate = 25.0
 bounds_min = Vector3(-1.2, 0.0, -1.2)
 bounds_max = Vector3(1.2, 2.5, 1.2)

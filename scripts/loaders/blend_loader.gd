@@ -65,5 +65,29 @@ static func load_blend_file(blend_path: String, custom_blender_path: String = ""
 	# Clean up temp file
 	DirAccess.remove_absolute(temp_glb)
 	
+	if scene_root:
+		_make_materials_two_sided(scene_root)
+	
 	print("[BlendLoader] Successfully imported scene from .blend!")
 	return scene_root
+
+static func _make_materials_two_sided(node: Node) -> void:
+	if node is MeshInstance3D:
+		var mi = node as MeshInstance3D
+		if mi.material_override is BaseMaterial3D:
+			(mi.material_override as BaseMaterial3D).cull_mode = BaseMaterial3D.CULL_DISABLED
+		if mi.mesh:
+			for surf in range(mi.mesh.get_surface_count()):
+				var mat = mi.get_surface_override_material(surf)
+				if mat is BaseMaterial3D:
+					(mat as BaseMaterial3D).cull_mode = BaseMaterial3D.CULL_DISABLED
+				elif mat == null:
+					var base_mat = mi.mesh.surface_get_material(surf)
+					if base_mat is BaseMaterial3D:
+						(base_mat as BaseMaterial3D).cull_mode = BaseMaterial3D.CULL_DISABLED
+					elif base_mat == null:
+						var new_mat = StandardMaterial3D.new()
+						new_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+						mi.set_surface_override_material(surf, new_mat)
+	for child in node.get_children():
+		_make_materials_two_sided(child)

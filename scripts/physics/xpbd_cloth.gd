@@ -77,10 +77,10 @@ func _init_cloth_grid() -> void:
 			prev_positions.append(world_pos)
 			velocities.append(Vector3.ZERO)
 			
-			# Pin top corners or top edge by default if no external anchors
+			# Pin only the side corners/edges (left and right), leaving the middle free to flap in the wind
 			var is_pinned = false
 			if y == 0:
-				if x == 0 or x == resolution_x - 1 or x == int(resolution_x / 2):
+				if x == 0 or x == resolution_x - 1:
 					is_pinned = true
 
 			inv_masses.append(0.0 if is_pinned else inv_m)

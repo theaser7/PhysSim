@@ -57,6 +57,20 @@ func _ready() -> void:
 		print("[FAIL] All Preset Scenes Instantiation")
 		failed += 1
 
+	if await test_ship_stability():
+		print("[PASS] Ship Hydrodynamic Stability & Center of Mass")
+		passed += 1
+	else:
+		print("[FAIL] Ship Hydrodynamic Stability & Center of Mass")
+		failed += 1
+
+	if test_sandbox_preset():
+		print("[PASS] Sandbox Preset (No Ocean Waves Floor Clipping)")
+		passed += 1
+	else:
+		print("[FAIL] Sandbox Preset (No Ocean Waves Floor Clipping)")
+		failed += 1
+
 	if await test_step_frame_reset():
 		print("[PASS] Simulation Step & Pause State Management")
 		passed += 1
@@ -65,10 +79,10 @@ func _ready() -> void:
 		failed += 1
 
 	if await test_live_ui_and_sliders():
-		print("[PASS] Blender UI, Inter Font, Overlays Popover & Slider Updates")
+		print("[PASS] Blender UI, Global Model Import Button, Overlays Popover & Sliders")
 		passed += 1
 	else:
-		print("[FAIL] Blender UI, Inter Font, Overlays Popover & Slider Updates")
+		print("[FAIL] Blender UI, Global Model Import Button, Overlays Popover & Sliders")
 		failed += 1
 
 	print("==========================================")
@@ -124,13 +138,21 @@ func test_xpbd_cloth() -> bool:
 	var cloth = XPBDCloth.new()
 	cloth.cloth_width = 2.0
 	cloth.cloth_height = 2.0
-	cloth.resolution_x = 4
+	cloth.resolution_x = 5
 	cloth.resolution_y = 4
 	add_child(cloth)
 	cloth._init_cloth_grid()
 
-	if cloth.positions.size() != 16:
-		printerr("Expected 16 cloth particles, got: ", cloth.positions.size())
+	if cloth.positions.size() != 20:
+		printerr("Expected 20 cloth particles, got: ", cloth.positions.size())
+		return false
+
+	# Verify side corners are pinned and middle top particle is unpinned
+	if cloth.inv_masses[0] != 0.0 or cloth.inv_masses[4] != 0.0:
+		printerr("Top side corners must be pinned (inv_mass == 0)")
+		return false
+	if cloth.inv_masses[2] <= 0.0:
+		printerr("Middle cloth particle must NOT be pinned (inv_mass > 0)")
 		return false
 
 	if cloth.constraints.is_empty():
@@ -139,7 +161,7 @@ func test_xpbd_cloth() -> bool:
 
 	cloth._step_simulation(0.016)
 
-	if cloth.vertex_stress.size() != 16:
+	if cloth.vertex_stress.size() != 20:
 		printerr("Vertex stress array size mismatch")
 		return false
 
@@ -187,6 +209,15 @@ func test_sph_fluid() -> bool:
 		printerr("SPH density calculation failed, got: ", sph.densities[0])
 		return false
 
+	# Benchmark SPH steps performance
+	var t0 = Time.get_ticks_msec()
+	for step in range(30):
+		sph._step_sph(0.01)
+	var elapsed = Time.get_ticks_msec() - t0
+	if elapsed > 300:
+		printerr("SPH steps took too long: %d ms for 30 steps" % elapsed)
+		return false
+
 	sph.queue_free()
 	return true
 
@@ -219,6 +250,78 @@ func test_stl_welding() -> bool:
 		printerr("Expected 6 indices, got: ", indices.size())
 		return false
 
+	# Test two-sided material assignment on generated surfaces
+	var mat = mesh.surface_get_material(0)
+	if not (mat is BaseMaterial3D) or (mat as BaseMaterial3D).cull_mode != BaseMaterial3D.CULL_DISABLED:
+		printerr("STL mesh material must be two-sided (CULL_DISABLED)")
+		return false
+
+	# Test Blender Z-up to Godot Y-up orientation conversion
+	var ship_stl = STLLoader.load_stl_file("res://pirate_ship_LowPoly.stl")
+	if ship_stl:
+		var aabb = ship_stl.get_aabb()
+		# Height (masts) should be along Y (> 8.0) and length along Z (> 8.0)
+		if aabb.size.y < 8.0 or aabb.size.z < 8.0:
+			printerr("STL Z-up orientation conversion failed, got AABB: ", aabb)
+			return false
+
+	return true
+
+func test_ship_stability() -> bool:
+	var p1_scene = load("res://scenes/presets/preset1_ship_ocean.tscn")
+	if p1_scene == null:
+		printerr("Failed to load preset1 scene")
+		return false
+	var inst = p1_scene.instantiate()
+	add_child(inst)
+	var ship = inst.get_node_or_null("Ship") as BuoyancyBody
+	if ship == null:
+		printerr("Ship node missing in preset 1")
+		inst.queue_free()
+		return false
+
+	if ship.center_of_mass.y > -0.5:
+		printerr("Ship center of mass should be low in hull, got: ", ship.center_of_mass.y)
+		inst.queue_free()
+		return false
+
+	if ship.probe_points.size() < 15:
+		printerr("Ship should have multi-probe distributed buoyancy points across beam")
+		inst.queue_free()
+		return false
+
+	if ship.righting_stiffness < 500.0 or ship.roll_pitch_damping < 10.0:
+		printerr("Ship righting stiffness or roll damping insufficient")
+		inst.queue_free()
+		return false
+
+	# Simulate 60 physics frames and ensure ship stays stably upright in waves
+	for f in range(60):
+		await get_tree().physics_frame
+		var up_alignment = ship.global_transform.basis.y.dot(Vector3.UP)
+		if up_alignment < 0.7:
+			printerr("Ship capsized! Alignment to UP is: ", up_alignment)
+			inst.queue_free()
+			return false
+
+	inst.queue_free()
+	return true
+
+func test_sandbox_preset() -> bool:
+	var p4_scene = load("res://scenes/presets/preset4_sandbox.tscn")
+	if p4_scene == null:
+		printerr("Failed to load preset4 scene")
+		return false
+	var inst = p4_scene.instantiate()
+	if inst.get_node_or_null("OceanSystem") != null:
+		printerr("Sandbox preset must NOT have OceanSystem (ocean waves clipping floor)")
+		inst.free()
+		return false
+	if inst.get_node_or_null("Floor") == null:
+		printerr("Sandbox preset must have solid Floor")
+		inst.free()
+		return false
+	inst.free()
 	return true
 
 func test_preset_scenes() -> bool:
@@ -358,6 +461,19 @@ func test_live_ui_and_sliders() -> bool:
 		var active_tab = [hud.btn_preset_1, hud.btn_preset_2, hud.btn_preset_3, hud.btn_preset_4][p]
 		if active_tab.get_theme_stylebox("normal") != hud._style_tab_active:
 			printerr("Preset tab %d did not receive active stylebox!" % p)
+			main_inst.queue_free()
+			return false
+
+		# Verify Global Model Import button can open ModelDialog from ANY preset
+		hud.model_panel.visible = false
+		hud._toggle_model_menu()
+		if not hud.model_panel.visible:
+			printerr("Global import button failed to open ModelDialog in preset %d!" % p)
+			main_inst.queue_free()
+			return false
+		hud._toggle_model_menu()
+		if hud.model_panel.visible:
+			printerr("Global import button failed to close ModelDialog in preset %d!" % p)
 			main_inst.queue_free()
 			return false
 

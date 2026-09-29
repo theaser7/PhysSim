@@ -52,10 +52,11 @@ extends Control
 @onready var btn_preset_2: Button = $TopBar/HBox/WorkspaceTabs/BtnPreset2
 @onready var btn_preset_3: Button = $TopBar/HBox/WorkspaceTabs/BtnPreset3
 @onready var btn_preset_4: Button = $TopBar/HBox/WorkspaceTabs/BtnPreset4
+@onready var btn_import_model: Button = $TopBar/HBox/BtnImportModel
 @onready var btn_cam_mode: Button = $TopBar/HBox/BtnCamMode
 @onready var btn_reset_cam: Button = $TopBar/HBox/BtnResetCam
 
-# Sandbox model loader panel
+# Global model loader panel (accessible from any preset)
 @onready var model_panel: PanelContainer = $ModelLoaderPanel
 
 const ICON_PLAY = preload("res://icons/play.svg")
@@ -79,6 +80,7 @@ func _connect_signals() -> void:
 	btn_preset_4.pressed.connect(func(): SimState.set_preset(3))
 
 	# Popovers & Menus
+	btn_import_model.pressed.connect(_toggle_model_menu)
 	btn_overlays.pressed.connect(_toggle_overlays_menu)
 	btn_telemetry.pressed.connect(_toggle_telemetry_menu)
 
@@ -125,6 +127,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				_toggle_overlays_menu()
 			KEY_T:
 				_toggle_telemetry_menu()
+			KEY_M, KEY_I:
+				_toggle_model_menu()
 
 func _process(delta: float) -> void:
 	if not SimState.is_paused:
@@ -222,6 +226,10 @@ func _on_reset_requested() -> void:
 	_sim_time_accum = 0.0
 	SimState.request_reset()
 
+func _toggle_model_menu() -> void:
+	model_panel.visible = not model_panel.visible
+	btn_import_model.modulate = Color(1.2, 1.2, 1.2) if model_panel.visible else Color(1.0, 1.0, 1.0)
+
 func _toggle_overlays_menu() -> void:
 	overlays_panel.visible = not overlays_panel.visible
 	btn_overlays.modulate = Color(1.2, 1.2, 1.2) if overlays_panel.visible else Color(1.0, 1.0, 1.0)
@@ -269,7 +277,6 @@ func _on_wave_amp_changed(val: float) -> void:
 
 func _on_preset_changed(idx: int) -> void:
 	_sim_time_accum = 0.0
-	model_panel.visible = (idx == 0 or idx == 3)
 	_update_workspace_tabs(idx)
 
 func _update_workspace_tabs(idx: int) -> void:

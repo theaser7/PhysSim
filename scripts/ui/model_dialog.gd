@@ -39,6 +39,9 @@ func _connect_events() -> void:
 	btn_load_blend.pressed.connect(_on_load_blend_pressed)
 	btn_spawn_sample_hull.pressed.connect(_spawn_procedural_hull)
 	btn_spawn_sample_wing.pressed.connect(_spawn_procedural_wing)
+	var btn_close = get_node_or_null("VBox/Header/BtnClose") as Button
+	if btn_close:
+		btn_close.pressed.connect(func(): visible = false)
 
 func _on_load_stl_pressed() -> void:
 	_file_dialog.filters = PackedStringArray(["*.stl ; STL 3D Models"])

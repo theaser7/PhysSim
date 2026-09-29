@@ -6,8 +6,9 @@ extends RigidBody3D
 @export var ocean_system: OceanSystem
 @export var total_buoyant_volume: float = 6.0 # m^3
 @export var water_drag_coeff: float = 1.2
-@export var righting_stiffness: float = 150.0
-@export var keel_lateral_drag: float = 4.0
+@export var righting_stiffness: float = 1200.0
+@export var roll_pitch_damping: float = 25.0
+@export var keel_lateral_drag: float = 6.0
 
 # Local probe coordinates representing ship hull geometry
 var probe_points: Array[Vector3] = []
@@ -15,21 +16,40 @@ var probe_volume: float = 1.0
 var probe_max_submersion: float = 1.2
 
 func _ready() -> void:
+	center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_CUSTOM
+	center_of_mass = Vector3(0.0, -0.8, 0.0) # Low in keel for metacentric stability
 	if probe_points.is_empty():
 		_setup_default_ship_probes()
 
 func _setup_default_ship_probes() -> void:
-	# Distributed hull probes: Keel, bow, stern, port, starboard
+	# Distributed hull probes: Keel, bilge, and wide waterplane beam to ensure roll stability
 	probe_points = [
-		Vector3(0.0, -0.6, 2.5),   # Bow keel
-		Vector3(0.0, -0.8, 0.0),   # Center keel
-		Vector3(0.0, -0.6, -2.5),  # Stern keel
-		Vector3(0.8, -0.3, 1.2),   # Port forward
-		Vector3(-0.8, -0.3, 1.2),  # Starboard forward
-		Vector3(0.9, -0.3, -0.8),  # Port mid-aft
-		Vector3(-0.9, -0.3, -0.8), # Starboard mid-aft
-		Vector3(0.0, -0.4, 3.2),   # Bow tip
-		Vector3(0.0, -0.4, -3.0),  # Stern transom
+		# Center Keel
+		Vector3(0.0, -0.9, 2.5),
+		Vector3(0.0, -0.9, 0.0),
+		Vector3(0.0, -0.9, -2.5),
+
+		# Inner bilge (port & starboard, low)
+		Vector3(0.7, -0.6, 2.2),
+		Vector3(-0.7, -0.6, 2.2),
+		Vector3(0.8, -0.6, 0.0),
+		Vector3(-0.8, -0.6, 0.0),
+		Vector3(0.7, -0.6, -2.2),
+		Vector3(-0.7, -0.6, -2.2),
+
+		# Outer beam / waterline (port & starboard - generates powerful righting moments)
+		Vector3(1.3, -0.2, 2.0),
+		Vector3(-1.3, -0.2, 2.0),
+		Vector3(1.4, -0.2, 0.5),
+		Vector3(-1.4, -0.2, 0.5),
+		Vector3(1.4, -0.2, -0.5),
+		Vector3(-1.4, -0.2, -0.5),
+		Vector3(1.3, -0.2, -2.0),
+		Vector3(-1.3, -0.2, -2.0),
+
+		# Bow and Stern tips
+		Vector3(0.0, -0.3, 3.4),
+		Vector3(0.0, -0.3, -3.2)
 	]
 	probe_volume = total_buoyant_volume / float(probe_points.size())
 
@@ -78,7 +98,6 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 
 	# Keel lateral resistance (ships resist sideways drift, favoring forward surge)
 	if submerged_count > 0:
-		var forward_dir = -global_transform.basis.z
 		var lateral_dir = global_transform.basis.x
 		var lateral_speed = state.linear_velocity.dot(lateral_dir)
 		var keel_force = -lateral_dir * (lateral_speed * keel_lateral_drag * mass)
@@ -87,11 +106,18 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	# Metacentric righting torque (prevents capsizing, restores upright posture)
 	var current_up = global_transform.basis.y
 	var world_up = Vector3.UP
+	var alignment = clamp(current_up.dot(world_up), -1.0, 1.0)
 	var righting_axis = current_up.cross(world_up)
-	if righting_axis.length_squared() > 0.0001:
-		var righting_torque = righting_axis * righting_stiffness
-		state.apply_torque(righting_torque)
 
-	# Angular hydrodynamic damping in water
+	if righting_axis.length_squared() > 0.0001:
+		var righting_factor = 1.0 - alignment
+		var righting_torque = righting_axis.normalized() * (righting_stiffness * righting_factor)
+		state.apply_torque(righting_torque)
+	elif alignment < 0.0:
+		# Upside down: nudge out of inverted equilibrium
+		state.apply_torque(global_transform.basis.z * righting_stiffness)
+
+	# Angular hydrodynamic damping in water to suppress roll & pitch oscillations
 	if submerged_count > 0:
-		state.angular_velocity *= 0.96
+		var ang_damp = -state.angular_velocity * (roll_pitch_damping * mass * 0.02)
+		state.apply_torque(ang_damp)

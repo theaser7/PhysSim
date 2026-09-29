@@ -3,7 +3,7 @@ extends RefCounted
 
 ## Binary and ASCII STL file parser with vertex welding and topological reconstruction
 
-static func load_stl_file(file_path: String) -> ArrayMesh:
+static func load_stl_file(file_path: String, convert_z_up: bool = true) -> ArrayMesh:
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	if not file:
 		push_error("[STLLoader] Failed to open file: " + file_path)
@@ -18,9 +18,9 @@ static func load_stl_file(file_path: String) -> ArrayMesh:
 
 	# Check if binary or ASCII
 	if is_binary_stl(buffer):
-		return parse_binary_stl(buffer)
+		return parse_binary_stl(buffer, convert_z_up)
 	else:
-		return parse_ascii_stl(buffer.get_string_from_utf8())
+		return parse_ascii_stl(buffer.get_string_from_utf8(), convert_z_up)
 
 static func is_binary_stl(buffer: PackedByteArray) -> bool:
 	if buffer.size() < 84:
@@ -43,7 +43,7 @@ static func is_binary_stl(buffer: PackedByteArray) -> bool:
 
 	return true
 
-static func parse_binary_stl(buffer: PackedByteArray) -> ArrayMesh:
+static func parse_binary_stl(buffer: PackedByteArray, convert_z_up: bool = true) -> ArrayMesh:
 	var sp = StreamPeerBuffer.new()
 	sp.data_array = buffer
 	sp.seek(80)
@@ -64,7 +64,11 @@ static func parse_binary_stl(buffer: PackedByteArray) -> ArrayMesh:
 			var vx = sp.get_float()
 			var vy = sp.get_float()
 			var vz = sp.get_float()
-			raw_vertices[raw_idx] = Vector3(vx, vy, vz)
+			if convert_z_up:
+				# Convert Blender / CAD Z-up to Godot Y-up: (x, z, -y)
+				raw_vertices[raw_idx] = Vector3(vx, vz, -vy)
+			else:
+				raw_vertices[raw_idx] = Vector3(vx, vy, vz)
 			raw_idx += 1
 
 		# Attribute byte count (uint16)
@@ -72,7 +76,7 @@ static func parse_binary_stl(buffer: PackedByteArray) -> ArrayMesh:
 
 	return weld_and_build_mesh(raw_vertices)
 
-static func parse_ascii_stl(text: String) -> ArrayMesh:
+static func parse_ascii_stl(text: String, convert_z_up: bool = true) -> ArrayMesh:
 	var raw_vertices: PackedVector3Array = []
 	var lines = text.split("\n")
 
@@ -84,7 +88,10 @@ static func parse_ascii_stl(text: String) -> ArrayMesh:
 				var vx = parts[1].to_float()
 				var vy = parts[2].to_float()
 				var vz = parts[3].to_float()
-				raw_vertices.append(Vector3(vx, vy, vz))
+				if convert_z_up:
+					raw_vertices.append(Vector3(vx, vz, -vy))
+				else:
+					raw_vertices.append(Vector3(vx, vy, vz))
 
 	return weld_and_build_mesh(raw_vertices)
 
@@ -146,4 +153,10 @@ static func weld_and_build_mesh(raw_vertices: PackedVector3Array) -> ArrayMesh:
 
 	var mesh = ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	
+	# Default two-sided material to eliminate backface culling transparency
+	var default_mat = StandardMaterial3D.new()
+	default_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mesh.surface_set_material(0, default_mat)
+	
 	return mesh

@@ -4,7 +4,7 @@ extends Node3D
 ## Controller for Preset 4: Custom Sandbox with interactive model loading and role assignment
 
 @onready var spawn_point: Node3D = $SpawnPoint
-@onready var ocean: OceanSystem = $OceanSystem
+@onready var ocean: OceanSystem = get_node_or_null("OceanSystem") as OceanSystem
 @onready var wind: WindField = $WindField
 @onready var streamlines: StreamlineVisualizer = $StreamlineVisualizer
 @onready var spawned_container: Node3D = $SpawnedModels
@@ -41,6 +41,7 @@ func _spawn_rigid_body(mesh: Mesh, model_name: String) -> void:
 	var mat = StandardMaterial3D.new()
 	mat.albedo_color = Color(randf_range(0.3, 0.9), randf_range(0.3, 0.9), randf_range(0.3, 0.9))
 	mat.roughness = 0.4
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mi.material_override = mat
 	rb.add_child(mi)
 
@@ -62,7 +63,8 @@ func _spawn_rigid_body(mesh: Mesh, model_name: String) -> void:
 func _spawn_floating_body(mesh: Mesh, model_name: String) -> void:
 	var fb = BuoyancyBody.new()
 	fb.name = "Float_" + model_name
-	fb.ocean_system = ocean
+	if ocean != null:
+		fb.ocean_system = ocean
 	fb.mass = 80.0
 	fb.global_position = Vector3(randf_range(-2, 2), 0.5, randf_range(-2, 2))
 
@@ -70,6 +72,7 @@ func _spawn_floating_body(mesh: Mesh, model_name: String) -> void:
 	mi.mesh = mesh
 	var mat = StandardMaterial3D.new()
 	mat.albedo_color = Color(0.2, 0.7, 0.9)
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mi.material_override = mat
 	fb.add_child(mi)
 

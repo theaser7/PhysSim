@@ -40,13 +40,14 @@ func _on_custom_model_loaded(mesh: Mesh, _name: String, _role: String) -> void:
 	mat.albedo_color = Color(0.62, 0.44, 0.28, 1.0)
 	mat.roughness = 0.55
 	mat.metallic = 0.05
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mi.material_override = mat
 
 	var aabb = mesh.get_aabb()
 	var max_dim = max(aabb.size.x, max(aabb.size.y, aabb.size.z))
 	var s = 6.0 / max(max_dim, 0.01)
 	mi.scale = Vector3(s, s, s)
-	mi.position = -aabb.get_center() * s + Vector3(0, 0.2, 0)
+	mi.position = Vector3(-aabb.get_center().x * s, -aabb.position.y * s - 0.9, -aabb.get_center().z * s)
 	model_anchor.add_child(mi)
 
 func _setup_ship_model() -> void:
@@ -63,11 +64,13 @@ func _setup_ship_model() -> void:
 			mat.albedo_color = Color(0.62, 0.44, 0.28, 1.0)
 			mat.roughness = 0.55
 			mat.metallic = 0.05
+			mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 			mi.material_override = mat
 
 			# Center model on ship keel and waterline
-			mi.transform.origin = Vector3(0.0, 2.0, -3.2)
+			var aabb = mesh.get_aabb()
 			mi.scale = Vector3(0.85, 0.85, 0.85)
+			mi.position = Vector3(-aabb.get_center().x * 0.85, -aabb.position.y * 0.85 - 0.9, -aabb.get_center().z * 0.85)
 			model_anchor.add_child(mi)
 			return
 
@@ -80,6 +83,7 @@ func _setup_ship_model() -> void:
 	var mat = StandardMaterial3D.new()
 	mat.albedo_color = Color(0.2, 0.6, 0.9, 0.5)
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	placeholder.material_override = mat
 	model_anchor.add_child(placeholder)
 
