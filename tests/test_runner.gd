@@ -64,6 +64,13 @@ func _ready() -> void:
 		print("[FAIL] Simulation Step & Pause State Management")
 		failed += 1
 
+	if await test_live_ui_and_sliders():
+		print("[PASS] Blender UI, Inter Font, Overlays Popover & Slider Updates")
+		passed += 1
+	else:
+		print("[FAIL] Blender UI, Inter Font, Overlays Popover & Slider Updates")
+		failed += 1
+
 	print("==========================================")
 	print("TESTS COMPLETED: %d PASSED, %d FAILED" % [passed, failed])
 	print("==========================================\n")
@@ -251,4 +258,92 @@ func test_step_frame_reset() -> bool:
 		printerr("step_frame_requested was NOT reset to false after physics frame!")
 		return false
 
+	return true
+	
+func test_live_ui_and_sliders() -> bool:
+	var main_scene = load("res://scenes/main.tscn")
+	if not main_scene:
+		printerr("Failed to load res://scenes/main.tscn")
+		return false
+
+	var main_inst = main_scene.instantiate()
+	add_child(main_inst)
+
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	var hud = main_inst.get_node_or_null("HUD") as HUDController
+	if not hud:
+		printerr("HUD node missing from main.tscn")
+		main_inst.queue_free()
+		return false
+
+	# Test slider updates and label formatting
+	hud.slider_gravity.value = -12.4
+	hud._on_gravity_changed(-12.4)
+	if hud.lbl_gravity.text != "-12.4 m/s²":
+		printerr("Gravity slider label failed to update! Value: ", hud.lbl_gravity.text)
+		main_inst.queue_free()
+		return false
+
+	hud.slider_wind_speed.value = 16.5
+	hud._on_wind_speed_changed(16.5)
+	if hud.lbl_wind_speed.text != "16.5 m/s":
+		printerr("Wind speed slider label failed to update! Value: ", hud.lbl_wind_speed.text)
+		main_inst.queue_free()
+		return false
+
+	hud.slider_wind_dir.value = 90.0
+	hud._on_wind_dir_changed(90.0)
+	if hud.lbl_wind_dir.text != "90°":
+		printerr("Wind dir slider label failed to update! Value: ", hud.lbl_wind_dir.text)
+		main_inst.queue_free()
+		return false
+
+	hud.slider_viscosity.value = 0.50
+	hud._on_viscosity_changed(0.50)
+	if hud.lbl_viscosity.text != "0.50 Pa·s":
+		printerr("Viscosity slider label failed to update! Value: ", hud.lbl_viscosity.text)
+		main_inst.queue_free()
+		return false
+
+	hud.slider_wave_amp.value = 1.8
+	hud._on_wave_amp_changed(1.8)
+	if hud.lbl_wave_amp.text != "1.8 m":
+		printerr("Wave amp slider label failed to update! Value: ", hud.lbl_wave_amp.text)
+		main_inst.queue_free()
+		return false
+
+	# Test popover toggles
+	hud._toggle_overlays_menu()
+	if not hud.overlays_panel.visible:
+		printerr("Overlays panel failed to open")
+		main_inst.queue_free()
+		return false
+
+	hud._toggle_overlays_menu()
+	if hud.overlays_panel.visible:
+		printerr("Overlays panel failed to close")
+		main_inst.queue_free()
+		return false
+
+	hud._toggle_telemetry_menu()
+	if hud.telemetry_panel.visible:
+		printerr("Telemetry panel failed to close on toggle")
+		main_inst.queue_free()
+		return false
+
+	hud._toggle_telemetry_menu()
+	if not hud.telemetry_panel.visible:
+		printerr("Telemetry panel failed to reopen on toggle")
+		main_inst.queue_free()
+		return false
+
+	# Test presets cycle in live scene
+	for p in range(4):
+		SimState.set_preset(p)
+		await get_tree().process_frame
+		await get_tree().physics_frame
+
+	main_inst.queue_free()
 	return true

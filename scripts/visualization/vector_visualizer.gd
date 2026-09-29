@@ -50,7 +50,8 @@ func _process(_delta: float) -> void:
 
 func _render_vectors() -> void:
 	_immediate_mesh.clear_surfaces()
-	_immediate_mesh.surface_begin(Mesh.PRIMITIVE_LINES, _line_material)
+
+	var arrows: Array[Dictionary] = []
 
 	for obj in tracked_objects:
 		if not is_instance_valid(obj):
@@ -64,24 +65,29 @@ func _render_vectors() -> void:
 			if SimState.show_velocity_vectors:
 				var vel = rb.linear_velocity
 				if vel.length_squared() > 0.01:
-					_draw_arrow(pos, vel * velocity_scale, _mag_to_color(vel.length(), 15.0))
+					arrows.append({"origin": pos, "vec": vel * velocity_scale, "col": _mag_to_color(vel.length(), 15.0)})
 
 			# Forward / Thrust direction
 			if SimState.show_acceleration_vectors:
 				var fwd = -rb.global_transform.basis.z * 2.0
-				_draw_arrow(pos + Vector3(0, 0.5, 0), fwd, Color(1.0, 0.8, 0.1))
+				arrows.append({"origin": pos + Vector3(0, 0.5, 0), "vec": fwd, "col": Color(1.0, 0.8, 0.1)})
 
 		elif obj is XPBDCloth:
 			var cloth = obj as XPBDCloth
-			var n = min(cloth.positions.size(), 30)
 			var step = max(1, cloth.positions.size() / 25)
 
 			for i in range(0, cloth.positions.size(), step):
 				var p = cloth.positions[i]
 				var v = cloth.velocities[i]
 				if SimState.show_velocity_vectors and v.length_squared() > 0.05:
-					_draw_arrow(p, v * velocity_scale, _mag_to_color(v.length(), 8.0))
+					arrows.append({"origin": p, "vec": v * velocity_scale, "col": _mag_to_color(v.length(), 8.0)})
 
+	if arrows.is_empty():
+		return
+
+	_immediate_mesh.surface_begin(Mesh.PRIMITIVE_LINES, _line_material)
+	for a in arrows:
+		_draw_arrow(a["origin"], a["vec"], a["col"])
 	_immediate_mesh.surface_end()
 
 func _draw_arrow(origin: Vector3, vec: Vector3, col: Color) -> void:

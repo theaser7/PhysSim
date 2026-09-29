@@ -17,14 +17,11 @@ const SPHGrid = preload("res://scripts/physics/sph_grid.gd")
 @export var emitter_rate: float = 35.0 # particles/second
 
 # Container boundary box (local space)
-@export var bounds_min: Vector3 = Vector3(-2.2, 0.0, -2.2)
-@export var bounds_max: Vector3 = Vector3(2.2, 4.5, 2.2)
+@export var bounds_min: Vector3 = Vector3(-1.2, 0.0, -1.2)
+@export var bounds_max: Vector3 = Vector3(1.2, 2.5, 1.2)
 
 # Obstacle spheres: Array of Vector4(x, y, z, radius)
-var obstacle_spheres: Array[Vector4] = [
-	Vector4(0.0, 1.2, 0.0, 0.75),
-	Vector4(-1.0, 2.2, 0.5, 0.5)
-]
+var obstacle_spheres: Array[Vector4] = []
 
 # Particle data arrays
 var positions: PackedVector3Array = []
@@ -71,8 +68,8 @@ func _setup_multimesh() -> void:
 	var sphere = SphereMesh.new()
 	sphere.radius = particle_radius
 	sphere.height = particle_radius * 2.0
-	sphere.radial_segments = 12
-	sphere.rings = 6
+	sphere.radial_segments = 16
+	sphere.rings = 8
 	_multimesh.mesh = sphere
 
 	var mat = ShaderMaterial.new()

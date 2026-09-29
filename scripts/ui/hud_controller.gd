@@ -1,74 +1,88 @@
 class_name HUDController
 extends Control
 
-## Scientific HUD controller managing telemetry, simulation controls, and preset switching
+## Blender-style scientific HUD controller managing telemetry, simulation transport, overlays, and presets
 
 @export var camera: FreeCamera
 
-# Telemetry labels
-@onready var lbl_fps: Label = $TelemetryPanel/VBox/LblFPS
-@onready var lbl_wind: Label = $TelemetryPanel/VBox/LblWind
-@onready var lbl_particles: Label = $TelemetryPanel/VBox/LblParticles
-@onready var lbl_energy: Label = $TelemetryPanel/VBox/LblEnergy
-@onready var lbl_status: Label = $TelemetryPanel/VBox/LblStatus
+# Telemetry labels (simulation physics metrics only)
+@onready var telemetry_panel: PanelContainer = $TelemetryPanel
+@onready var lbl_sim_time: Label = $TelemetryPanel/VBox/RowTime/Val
+@onready var lbl_particles: Label = $TelemetryPanel/VBox/RowParticles/Val
+@onready var lbl_energy: Label = $TelemetryPanel/VBox/RowEnergy/Val
+@onready var lbl_wind: Label = $TelemetryPanel/VBox/RowWind/Val
 
-# Control buttons & sliders
-@onready var btn_play_pause: Button = $ControlBar/HBox/BtnPlayPause
-@onready var btn_step: Button = $ControlBar/HBox/BtnStep
-@onready var btn_reset: Button = $ControlBar/HBox/BtnReset
-@onready var slider_time_scale: HSlider = $ControlBar/HBox/TimeScaleBox/Slider
-@onready var lbl_time_scale: Label = $ControlBar/HBox/TimeScaleBox/Val
+# Overlays popover panel & toggles
+@onready var btn_overlays: Button = $TopBar/HBox/BtnOverlays
+@onready var overlays_panel: PanelContainer = $OverlaysPanel
+@onready var check_vel_vectors: CheckBox = $OverlaysPanel/VBox/CheckVelVectors
+@onready var check_acc_vectors: CheckBox = $OverlaysPanel/VBox/CheckAccVectors
+@onready var check_streamlines: CheckBox = $OverlaysPanel/VBox/CheckStreamlines
+@onready var check_cloth_stress: CheckBox = $OverlaysPanel/VBox/CheckClothStress
 
+# Telemetry toggle button
+@onready var btn_telemetry: Button = $TopBar/HBox/BtnTelemetry
+
+# Playback transport controls (bottom-left)
+@onready var btn_play_pause: Button = $TransportBar/HBox/BtnPlayPause
+@onready var btn_step: Button = $TransportBar/HBox/BtnStep
+@onready var btn_reset: Button = $TransportBar/HBox/BtnReset
+@onready var slider_time_scale: HSlider = $TransportBar/HBox/TimeScaleBox/Slider
+@onready var lbl_time_scale: Label = $TransportBar/HBox/TimeScaleBox/Val
+
+# Physics parameters panel & sliders
+@onready var physics_panel: PanelContainer = $PhysicsPanel
 @onready var slider_gravity: HSlider = $PhysicsPanel/VBox/GravityBox/Slider
-@onready var lbl_gravity: Label = $PhysicsPanel/VBox/GravityBox/Val
+@onready var lbl_gravity: Label = $PhysicsPanel/VBox/GravityBox/HBox/Val
 
 @onready var slider_wind_speed: HSlider = $PhysicsPanel/VBox/WindSpeedBox/Slider
-@onready var lbl_wind_speed: Label = $PhysicsPanel/VBox/WindSpeedBox/Val
+@onready var lbl_wind_speed: Label = $PhysicsPanel/VBox/WindSpeedBox/HBox/Val
 
 @onready var slider_wind_dir: HSlider = $PhysicsPanel/VBox/WindDirBox/Slider
-@onready var lbl_wind_dir: Label = $PhysicsPanel/VBox/WindDirBox/Val
+@onready var lbl_wind_dir: Label = $PhysicsPanel/VBox/WindDirBox/HBox/Val
 
 @onready var slider_viscosity: HSlider = $PhysicsPanel/VBox/ViscosityBox/Slider
-@onready var lbl_viscosity: Label = $PhysicsPanel/VBox/ViscosityBox/Val
+@onready var lbl_viscosity: Label = $PhysicsPanel/VBox/ViscosityBox/HBox/Val
 
 @onready var slider_wave_amp: HSlider = $PhysicsPanel/VBox/WaveAmpBox/Slider
-@onready var lbl_wave_amp: Label = $PhysicsPanel/VBox/WaveAmpBox/Val
+@onready var lbl_wave_amp: Label = $PhysicsPanel/VBox/WaveAmpBox/HBox/Val
 
-# Visualization check buttons
-@onready var check_vel_vectors: CheckBox = $VisToggles/HBox/CheckVelVectors
-@onready var check_acc_vectors: CheckBox = $VisToggles/HBox/CheckAccVectors
-@onready var check_streamlines: CheckBox = $VisToggles/HBox/CheckStreamlines
-@onready var check_cloth_stress: CheckBox = $VisToggles/HBox/CheckClothStress
-
-# Top navigation
-@onready var btn_preset_1: Button = $TopBar/HBox/BtnPreset1
-@onready var btn_preset_2: Button = $TopBar/HBox/BtnPreset2
-@onready var btn_preset_3: Button = $TopBar/HBox/BtnPreset3
-@onready var btn_preset_4: Button = $TopBar/HBox/BtnPreset4
+# Top workspace preset tabs & camera buttons
+@onready var btn_preset_1: Button = $TopBar/HBox/WorkspaceTabs/BtnPreset1
+@onready var btn_preset_2: Button = $TopBar/HBox/WorkspaceTabs/BtnPreset2
+@onready var btn_preset_3: Button = $TopBar/HBox/WorkspaceTabs/BtnPreset3
+@onready var btn_preset_4: Button = $TopBar/HBox/WorkspaceTabs/BtnPreset4
 @onready var btn_cam_mode: Button = $TopBar/HBox/BtnCamMode
 @onready var btn_reset_cam: Button = $TopBar/HBox/BtnResetCam
 
 # Sandbox model loader panel
 @onready var model_panel: PanelContainer = $ModelLoaderPanel
 
+var _sim_time_accum: float = 0.0
+
 func _ready() -> void:
 	_connect_signals()
 	_update_ui_from_state()
 
 func _connect_signals() -> void:
-	# Navigation
+	# Workspace tabs navigation
 	btn_preset_1.pressed.connect(func(): SimState.set_preset(0))
 	btn_preset_2.pressed.connect(func(): SimState.set_preset(1))
 	btn_preset_3.pressed.connect(func(): SimState.set_preset(2))
 	btn_preset_4.pressed.connect(func(): SimState.set_preset(3))
 
+	# Popovers & Menus
+	btn_overlays.pressed.connect(_toggle_overlays_menu)
+	btn_telemetry.pressed.connect(_toggle_telemetry_menu)
+
+	# Camera
 	btn_cam_mode.pressed.connect(_toggle_camera_mode)
 	btn_reset_cam.pressed.connect(_reset_camera)
 
-	# Controls
+	# Simulation Transport controls
 	btn_play_pause.pressed.connect(_toggle_play_pause)
 	btn_step.pressed.connect(func(): SimState.request_step())
-	btn_reset.pressed.connect(func(): SimState.request_reset())
+	btn_reset.pressed.connect(_on_reset_requested)
 
 	slider_time_scale.value_changed.connect(_on_time_scale_changed)
 	slider_gravity.value_changed.connect(_on_gravity_changed)
@@ -77,6 +91,7 @@ func _connect_signals() -> void:
 	slider_viscosity.value_changed.connect(_on_viscosity_changed)
 	slider_wave_amp.value_changed.connect(_on_wave_amp_changed)
 
+	# Overlays checkboxes
 	check_vel_vectors.toggled.connect(func(v): SimState.show_velocity_vectors = v)
 	check_acc_vectors.toggled.connect(func(v): SimState.show_acceleration_vectors = v)
 	check_streamlines.toggled.connect(func(v): SimState.show_streamlines = v)
@@ -84,37 +99,54 @@ func _connect_signals() -> void:
 
 	SimState.preset_change_requested.connect(_on_preset_changed)
 
-func _process(_delta: float) -> void:
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		match event.keycode:
+			KEY_1:
+				SimState.set_preset(0)
+			KEY_2:
+				SimState.set_preset(1)
+			KEY_3:
+				SimState.set_preset(2)
+			KEY_4:
+				SimState.set_preset(3)
+			KEY_SPACE:
+				_toggle_play_pause()
+			KEY_R:
+				_on_reset_requested()
+			KEY_O:
+				_toggle_overlays_menu()
+			KEY_T:
+				_toggle_telemetry_menu()
+
+func _process(delta: float) -> void:
+	if not SimState.is_paused:
+		_sim_time_accum += delta * SimState.time_scale
 	_update_telemetry()
 
 func _update_telemetry() -> void:
-	lbl_fps.text = "FPS: %d (%.1f ms)" % [int(SimState.fps), SimState.frame_time_ms]
-	lbl_wind.text = "Wind: %.1f m/s @ %d deg" % [SimState.wind_speed, int(SimState.wind_direction_deg)]
-	lbl_particles.text = "Particles / Verts: %d" % SimState.active_particle_count
-	lbl_energy.text = "Kinetic Energy: %.2f J" % SimState.total_kinetic_energy
-	
-	if SimState.is_paused:
-		lbl_status.text = "STATUS: PAUSED"
-		lbl_status.modulate = Color(1.0, 0.6, 0.2)
-	else:
-		lbl_status.text = "STATUS: RUNNING (%.1fx)" % SimState.time_scale
-		lbl_status.modulate = Color(0.2, 0.9, 0.4)
+	if not telemetry_panel.visible:
+		return
+	lbl_sim_time.text = "%.2f s" % _sim_time_accum
+	lbl_particles.text = "%d" % SimState.active_particle_count
+	lbl_energy.text = "%.2f J" % SimState.total_kinetic_energy
+	lbl_wind.text = "%.1f m/s @ %d°" % [SimState.wind_speed, int(SimState.wind_direction_deg)]
 
 func _update_ui_from_state() -> void:
 	slider_time_scale.value = SimState.time_scale
 	lbl_time_scale.text = "%.1fx" % SimState.time_scale
 
 	slider_gravity.value = SimState.gravity.y
-	lbl_gravity.text = "%.1f m/s^2" % SimState.gravity.y
+	lbl_gravity.text = "%.1f m/s²" % SimState.gravity.y
 
 	slider_wind_speed.value = SimState.wind_speed
 	lbl_wind_speed.text = "%.1f m/s" % SimState.wind_speed
 
 	slider_wind_dir.value = SimState.wind_direction_deg
-	lbl_wind_dir.text = "%d deg" % int(SimState.wind_direction_deg)
+	lbl_wind_dir.text = "%d°" % int(SimState.wind_direction_deg)
 
 	slider_viscosity.value = SimState.fluid_viscosity
-	lbl_viscosity.text = "%.2f" % SimState.fluid_viscosity
+	lbl_viscosity.text = "%.2f Pa·s" % SimState.fluid_viscosity
 
 	slider_wave_amp.value = SimState.ocean_wave_amplitude
 	lbl_wave_amp.text = "%.1f m" % SimState.ocean_wave_amplitude
@@ -124,11 +156,32 @@ func _update_ui_from_state() -> void:
 	check_streamlines.button_pressed = SimState.show_streamlines
 	check_cloth_stress.button_pressed = SimState.show_cloth_stress
 
-	btn_play_pause.text = "PAUSE [||]" if not SimState.is_paused else "PLAY [>]"
+	_update_play_pause_button()
+	_update_workspace_tabs(SimState.active_preset_index)
 
 func _toggle_play_pause() -> void:
 	SimState.toggle_pause()
-	btn_play_pause.text = "PAUSE [||]" if not SimState.is_paused else "PLAY [>]"
+	_update_play_pause_button()
+
+func _update_play_pause_button() -> void:
+	if SimState.is_paused:
+		btn_play_pause.text = "▶"
+		btn_play_pause.tooltip_text = "Resume Simulation (Space)"
+	else:
+		btn_play_pause.text = "⏸"
+		btn_play_pause.tooltip_text = "Pause Simulation (Space)"
+
+func _on_reset_requested() -> void:
+	_sim_time_accum = 0.0
+	SimState.request_reset()
+
+func _toggle_overlays_menu() -> void:
+	overlays_panel.visible = not overlays_panel.visible
+	btn_overlays.modulate = Color(1.2, 1.2, 1.2) if overlays_panel.visible else Color(1.0, 1.0, 1.0)
+
+func _toggle_telemetry_menu() -> void:
+	telemetry_panel.visible = not telemetry_panel.visible
+	btn_telemetry.modulate = Color(1.2, 1.2, 1.2) if telemetry_panel.visible else Color(1.0, 1.0, 1.0)
 
 func _toggle_camera_mode() -> void:
 	if camera:
@@ -149,7 +202,7 @@ func _on_time_scale_changed(val: float) -> void:
 
 func _on_gravity_changed(val: float) -> void:
 	SimState.gravity.y = val
-	lbl_gravity.text = "%.1f m/s^2" % val
+	lbl_gravity.text = "%.1f m/s²" % val
 
 func _on_wind_speed_changed(val: float) -> void:
 	SimState.wind_speed = val
@@ -157,20 +210,28 @@ func _on_wind_speed_changed(val: float) -> void:
 
 func _on_wind_dir_changed(val: float) -> void:
 	SimState.wind_direction_deg = val
-	lbl_wind_dir.text = "%d deg" % int(val)
+	lbl_wind_dir.text = "%d°" % int(val)
 
 func _on_viscosity_changed(val: float) -> void:
 	SimState.fluid_viscosity = val
-	lbl_viscosity.text = "%.2f" % val
+	lbl_viscosity.text = "%.2f Pa·s" % val
 
 func _on_wave_amp_changed(val: float) -> void:
 	SimState.ocean_wave_amplitude = val
 	lbl_wave_amp.text = "%.1f m" % val
 
 func _on_preset_changed(idx: int) -> void:
+	_sim_time_accum = 0.0
 	model_panel.visible = (idx == 3)
-	# Highlight active preset button
-	btn_preset_1.modulate = Color(1.2, 1.2, 1.2) if idx == 0 else Color(0.7, 0.7, 0.7)
-	btn_preset_2.modulate = Color(1.2, 1.2, 1.2) if idx == 1 else Color(0.7, 0.7, 0.7)
-	btn_preset_3.modulate = Color(1.2, 1.2, 1.2) if idx == 2 else Color(0.7, 0.7, 0.7)
-	btn_preset_4.modulate = Color(1.2, 1.2, 1.2) if idx == 3 else Color(0.7, 0.7, 0.7)
+	_update_workspace_tabs(idx)
+
+func _update_workspace_tabs(idx: int) -> void:
+	var tabs = [btn_preset_1, btn_preset_2, btn_preset_3, btn_preset_4]
+	for i in range(tabs.size()):
+		var tab = tabs[i]
+		if i == idx:
+			tab.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
+			tab.modulate = Color(1.2, 1.2, 1.3, 1.0)
+		else:
+			tab.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1.0))
+			tab.modulate = Color(0.85, 0.85, 0.85, 1.0)

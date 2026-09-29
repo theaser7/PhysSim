@@ -4,48 +4,86 @@
 [ext_resource type="Script" path="res://scripts/physics/ocean_system.gd" id="2_ocean"]
 [ext_resource type="Script" path="res://scripts/physics/wind_field.gd" id="3_wind"]
 [ext_resource type="Script" path="res://scripts/physics/buoyancy_body.gd" id="4_ship"]
-[ext_resource type="Script" path="res://scripts/physics/xpbd_cloth.gd" id="5_cloth"]
 [ext_resource type="Script" path="res://scripts/visualization/streamline_visualizer.gd" id="6_stream"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_hull"]
-size = Vector3(2.2, 1.5, 6.0)
+size = Vector3(3.2, 2.2, 7.5)
 
-[sub_resource type="StandardMaterial3D" id="Mat_Wood"]
-albedo_color = Color(0.45, 0.28, 0.16, 1)
-roughness = 0.65
+[sub_resource type="StandardMaterial3D" id="Mat_DomainFrame"]
+albedo_color = Color(0.18, 0.20, 0.24, 1)
+metallic = 0.7
+roughness = 0.3
 
-[sub_resource type="BoxMesh" id="BoxMesh_hull"]
-material = SubResource("Mat_Wood")
-size = Vector3(2.0, 1.2, 5.5)
+[sub_resource type="StandardMaterial3D" id="Mat_DomainGlass"]
+transparency = 1
+albedo_color = Color(0.12, 0.28, 0.45, 0.22)
+roughness = 0.1
 
-[sub_resource type="PrismMesh" id="PrismMesh_bow"]
-material = SubResource("Mat_Wood")
-left_to_right = 0.5
-size = Vector3(2.0, 1.2, 1.8)
+[sub_resource type="BoxMesh" id="BoxMesh_rim_x"]
+material = SubResource("Mat_DomainFrame")
+size = Vector3(28.4, 0.25, 0.25)
 
-[sub_resource type="CylinderMesh" id="CylinderMesh_mast"]
-material = SubResource("Mat_Wood")
-top_radius = 0.08
-bottom_radius = 0.12
-height = 4.8
+[sub_resource type="BoxMesh" id="BoxMesh_rim_z"]
+material = SubResource("Mat_DomainFrame")
+size = Vector3(0.25, 0.25, 28.4)
 
-[sub_resource type="CylinderMesh" id="CylinderMesh_yardarm"]
-material = SubResource("Mat_Wood")
-top_radius = 0.06
-bottom_radius = 0.06
-height = 4.0
+[sub_resource type="BoxMesh" id="BoxMesh_tank_wall_x"]
+material = SubResource("Mat_DomainGlass")
+size = Vector3(28.0, 4.0, 0.1)
 
-[sub_resource type="BoxMesh" id="BoxMesh_keel"]
-material = SubResource("Mat_Wood")
-size = Vector3(0.2, 0.8, 4.0)
+[sub_resource type="BoxMesh" id="BoxMesh_tank_wall_z"]
+material = SubResource("Mat_DomainGlass")
+size = Vector3(0.1, 4.0, 28.0)
+
+[sub_resource type="BoxMesh" id="BoxMesh_tank_floor"]
+material = SubResource("Mat_DomainFrame")
+size = Vector3(28.4, 0.2, 28.4)
 
 [node name="Preset1_ShipOcean" type="Node3D"]
 script = ExtResource("1_ctrl")
 
+[node name="DomainBounds" type="Node3D" parent="."]
+
+[node name="Floor" type="MeshInstance3D" parent="DomainBounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -4.0, 0)
+mesh = SubResource("BoxMesh_tank_floor")
+
+[node name="WallNorth" type="MeshInstance3D" parent="DomainBounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.0, -14.0)
+mesh = SubResource("BoxMesh_tank_wall_x")
+
+[node name="WallSouth" type="MeshInstance3D" parent="DomainBounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.0, 14.0)
+mesh = SubResource("BoxMesh_tank_wall_x")
+
+[node name="WallWest" type="MeshInstance3D" parent="DomainBounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.0, -2.0, 0)
+mesh = SubResource("BoxMesh_tank_wall_z")
+
+[node name="WallEast" type="MeshInstance3D" parent="DomainBounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.0, -2.0, 0)
+mesh = SubResource("BoxMesh_tank_wall_z")
+
+[node name="RimN" type="MeshInstance3D" parent="DomainBounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, -14.0)
+mesh = SubResource("BoxMesh_rim_x")
+
+[node name="RimS" type="MeshInstance3D" parent="DomainBounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 14.0)
+mesh = SubResource("BoxMesh_rim_x")
+
+[node name="RimW" type="MeshInstance3D" parent="DomainBounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.0, 0.1, 0)
+mesh = SubResource("BoxMesh_rim_z")
+
+[node name="RimE" type="MeshInstance3D" parent="DomainBounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.0, 0.1, 0)
+mesh = SubResource("BoxMesh_rim_z")
+
 [node name="OceanSystem" type="Node3D" parent="."]
 script = ExtResource("2_ocean")
-plane_size = 300.0
-mesh_subdivisions = 100
+plane_size = 28.0
+mesh_subdivisions = 90
 
 [node name="WindField" type="Node" parent="."]
 script = ExtResource("3_wind")
@@ -56,65 +94,21 @@ mass = 1200.0
 center_of_mass_mode = 1
 center_of_mass = Vector3(0, -0.4, 0)
 script = ExtResource("4_ship")
-total_buoyant_volume = 4.5
+total_buoyant_volume = 5.2
 water_drag_coeff = 1.4
-righting_stiffness = 350.0
+righting_stiffness = 400.0
 keel_lateral_drag = 6.0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Ship"]
 shape = SubResource("BoxShape3D_hull")
 
-[node name="HullMesh" type="MeshInstance3D" parent="Ship"]
-mesh = SubResource("BoxMesh_hull")
-
-[node name="BowMesh" type="MeshInstance3D" parent="Ship"]
-transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 3.65)
-mesh = SubResource("PrismMesh_bow")
-
-[node name="KeelMesh" type="MeshInstance3D" parent="Ship"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.9, 0)
-mesh = SubResource("BoxMesh_keel")
-
-[node name="Mast" type="MeshInstance3D" parent="Ship"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7, 0.4)
-mesh = SubResource("CylinderMesh_mast")
-
-[node name="Yardarm" type="MeshInstance3D" parent="Ship/Mast"]
-transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 0, 1.8, 0)
-mesh = SubResource("CylinderMesh_yardarm")
-
-[node name="AnchorTopLeft" type="Node3D" parent="Ship"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 4.5, 0.4)
-
-[node name="AnchorTopRight" type="Node3D" parent="Ship"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8, 4.5, 0.4)
-
-[node name="AnchorBottomLeft" type="Node3D" parent="Ship"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 1.6, 0.4)
-
-[node name="AnchorBottomRight" type="Node3D" parent="Ship"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8, 1.6, 0.4)
-
-[node name="Sail" type="Node3D" parent="Ship" node_paths=PackedStringArray("anchor_top_left", "anchor_top_right", "anchor_bottom_left", "anchor_bottom_right")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.0, 0.4)
-script = ExtResource("5_cloth")
-cloth_width = 3.6
-cloth_height = 2.8
-resolution_x = 13
-resolution_y = 10
-total_mass = 3.0
-solver_iterations = 6
-structural_compliance = 0.0001
-anchor_top_left = NodePath("../AnchorTopLeft")
-anchor_top_right = NodePath("../AnchorTopRight")
-anchor_bottom_left = NodePath("../AnchorBottomLeft")
-anchor_bottom_right = NodePath("../AnchorBottomRight")
+[node name="ModelAnchor" type="Node3D" parent="Ship"]
 
 [node name="StreamlineVisualizer" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 script = ExtResource("6_stream")
-seed_box_min = Vector3(-8, 1, -8)
-seed_box_max = Vector3(8, 7, 8)
+seed_box_min = Vector3(-7, 1, -7)
+seed_box_max = Vector3(7, 6, 7)
 stream_count_x = 5
 stream_count_y = 4
 stream_count_z = 5

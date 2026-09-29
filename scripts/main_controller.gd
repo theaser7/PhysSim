@@ -40,13 +40,13 @@ func _load_preset(index: int) -> void:
 	# Adjust camera position and view framing per preset
 	match index:
 		0: # Ship on Ocean
-			camera.reset_view(Vector3(0.0, 2.0, 0.0), 16.0)
+			camera.reset_view(Vector3(0.0, 1.5, 0.0), 18.0)
 		1: # SPH Fluid Basin
-			camera.reset_view(Vector3(0.0, 2.2, 0.0), 10.0)
+			camera.reset_view(Vector3(0.0, 1.3, 0.0), 6.5)
 		2: # Wind Tunnel
-			camera.reset_view(Vector3(0.0, 1.8, 0.0), 13.0)
+			camera.reset_view(Vector3(0.0, 1.8, 0.0), 11.0)
 		3: # Custom Sandbox
-			camera.reset_view(Vector3(0.0, 2.0, 0.0), 22.0)
+			camera.reset_view(Vector3(0.0, 2.0, 0.0), 16.0)
 
 func _reset_active_preset() -> void:
 	if active_preset_instance and active_preset_instance.has_method("reset_preset"):

@@ -1,7 +1,49 @@
 [gd_scene format=3 uid="uid://b0qhudctrl01"]
 
 [ext_resource type="Script" path="res://scripts/ui/hud_controller.gd" id="1_hud"]
-[ext_resource type="Script" path="res://scripts/ui/model_dialog.gd" id="2_model"]
+[ext_resource type="Theme" path="res://resources/blender_theme.tres" id="2_theme"]
+[ext_resource type="Script" path="res://scripts/ui/model_dialog.gd" id="3_model"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_topbar"]
+content_margin_left = 12.0
+content_margin_top = 4.0
+content_margin_right = 12.0
+content_margin_bottom = 4.0
+bg_color = Color(0.125, 0.125, 0.125, 1)
+border_width_bottom = 1
+border_color = Color(0.08, 0.08, 0.08, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_active"]
+content_margin_left = 12.0
+content_margin_top = 4.0
+content_margin_right = 12.0
+content_margin_bottom = 4.0
+bg_color = Color(0.24, 0.38, 0.60, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.18, 0.28, 0.45, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_inactive"]
+content_margin_left = 12.0
+content_margin_top = 4.0
+content_margin_right = 12.0
+content_margin_bottom = 4.0
+bg_color = Color(0.18, 0.18, 0.18, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.12, 0.12, 0.12, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
 
 [node name="HUD" type="Control"]
 layout_mode = 3
@@ -11,50 +53,68 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+theme = ExtResource("2_theme")
 script = ExtResource("1_hud")
 
 [node name="TopBar" type="PanelContainer" parent="."]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 54.0
+offset_bottom = 40.0
 grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_topbar")
 
 [node name="HBox" type="HBoxContainer" parent="TopBar"]
 layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="Margin" type="Control" parent="TopBar/HBox"]
-custom_minimum_size = Vector2(8, 0)
-layout_mode = 2
+theme_override_constants/separation = 10
 
 [node name="Title" type="Label" parent="TopBar/HBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.25, 0.85, 1, 1)
+theme_override_colors/font_color = Color(0.35, 0.75, 1, 1)
+theme_override_font_sizes/font_size = 13
 text = "PHYSSIM // 3D LAB"
 
 [node name="VSep1" type="VSeparator" parent="TopBar/HBox"]
 layout_mode = 2
 
-[node name="BtnPreset1" type="Button" parent="TopBar/HBox"]
+[node name="WorkspaceTabs" type="HBoxContainer" parent="TopBar/HBox"]
 layout_mode = 2
-text = "[1] Ship & Ocean"
+theme_override_constants/separation = 4
 
-[node name="BtnPreset2" type="Button" parent="TopBar/HBox"]
+[node name="BtnPreset1" type="Button" parent="TopBar/HBox/WorkspaceTabs"]
 layout_mode = 2
-text = "[2] SPH Fluid"
+theme_override_styles/normal = SubResource("StyleBoxFlat_tab_active")
+text = "Ship & Ocean"
 
-[node name="BtnPreset3" type="Button" parent="TopBar/HBox"]
+[node name="BtnPreset2" type="Button" parent="TopBar/HBox/WorkspaceTabs"]
 layout_mode = 2
-text = "[3] Wind Tunnel"
+theme_override_styles/normal = SubResource("StyleBoxFlat_tab_inactive")
+text = "SPH Fluid"
 
-[node name="BtnPreset4" type="Button" parent="TopBar/HBox"]
+[node name="BtnPreset3" type="Button" parent="TopBar/HBox/WorkspaceTabs"]
 layout_mode = 2
-text = "[4] Sandbox"
+theme_override_styles/normal = SubResource("StyleBoxFlat_tab_inactive")
+text = "Wind Tunnel"
+
+[node name="BtnPreset4" type="Button" parent="TopBar/HBox/WorkspaceTabs"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_tab_inactive")
+text = "Sandbox"
 
 [node name="Spacer" type="Control" parent="TopBar/HBox"]
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="BtnOverlays" type="Button" parent="TopBar/HBox"]
+layout_mode = 2
+text = "Overlays ▾"
+
+[node name="BtnTelemetry" type="Button" parent="TopBar/HBox"]
+layout_mode = 2
+text = "Telemetry ▾"
+
+[node name="VSep2" type="VSeparator" parent="TopBar/HBox"]
+layout_mode = 2
 
 [node name="BtnCamMode" type="Button" parent="TopBar/HBox"]
 layout_mode = 2
@@ -64,62 +124,138 @@ text = "CAM: ORBIT"
 layout_mode = 2
 text = "RESET CAM"
 
-[node name="MarginRight" type="Control" parent="TopBar/HBox"]
-custom_minimum_size = Vector2(8, 0)
+[node name="OverlaysPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -380.0
+offset_top = 46.0
+offset_right = -170.0
+offset_bottom = 200.0
+grow_horizontal = 0
+
+[node name="VBox" type="VBoxContainer" parent="OverlaysPanel"]
 layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="OverlaysPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.8, 0.9, 1)
+theme_override_font_sizes/font_size = 12
+text = "VIEWPORT OVERLAYS"
+
+[node name="HSep" type="HSeparator" parent="OverlaysPanel/VBox"]
+layout_mode = 2
+
+[node name="CheckVelVectors" type="CheckBox" parent="OverlaysPanel/VBox"]
+layout_mode = 2
+button_pressed = true
+text = "Velocity Vectors"
+
+[node name="CheckAccVectors" type="CheckBox" parent="OverlaysPanel/VBox"]
+layout_mode = 2
+text = "Acceleration / Thrust"
+
+[node name="CheckStreamlines" type="CheckBox" parent="OverlaysPanel/VBox"]
+layout_mode = 2
+button_pressed = true
+text = "Wind Streamlines"
+
+[node name="CheckClothStress" type="CheckBox" parent="OverlaysPanel/VBox"]
+layout_mode = 2
+button_pressed = true
+text = "Stress Heatmap"
 
 [node name="TelemetryPanel" type="PanelContainer" parent="."]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -280.0
-offset_top = 64.0
-offset_right = -16.0
-offset_bottom = 230.0
+offset_left = -270.0
+offset_top = 46.0
+offset_right = -12.0
+offset_bottom = 206.0
 grow_horizontal = 0
 
 [node name="VBox" type="VBoxContainer" parent="TelemetryPanel"]
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 5
 
-[node name="Title" type="Label" parent="TelemetryPanel/VBox"]
+[node name="HeaderHBox" type="HBoxContainer" parent="TelemetryPanel/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.3, 0.9, 1, 1)
-text = "TELEMETRY"
+
+[node name="Title" type="Label" parent="TelemetryPanel/VBox/HeaderHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.35, 0.75, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "SIMULATION TELEMETRY"
 
 [node name="HSep" type="HSeparator" parent="TelemetryPanel/VBox"]
 layout_mode = 2
 
-[node name="LblFPS" type="Label" parent="TelemetryPanel/VBox"]
+[node name="RowTime" type="HBoxContainer" parent="TelemetryPanel/VBox"]
 layout_mode = 2
-text = "FPS: 60.0 (16.6 ms)"
 
-[node name="LblWind" type="Label" parent="TelemetryPanel/VBox"]
+[node name="Lbl" type="Label" parent="TelemetryPanel/VBox/RowTime"]
 layout_mode = 2
-text = "Wind: 8.0 m/s @ 45 deg"
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
+text = "Sim Time:"
 
-[node name="LblParticles" type="Label" parent="TelemetryPanel/VBox"]
+[node name="Val" type="Label" parent="TelemetryPanel/VBox/RowTime"]
 layout_mode = 2
-text = "Particles / Verts: 0"
+text = "0.00 s"
 
-[node name="LblEnergy" type="Label" parent="TelemetryPanel/VBox"]
+[node name="RowParticles" type="HBoxContainer" parent="TelemetryPanel/VBox"]
 layout_mode = 2
-text = "Kinetic Energy: 0.0 J"
 
-[node name="LblStatus" type="Label" parent="TelemetryPanel/VBox"]
+[node name="Lbl" type="Label" parent="TelemetryPanel/VBox/RowParticles"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.2, 0.9, 0.4, 1)
-text = "STATUS: RUNNING (1.0x)"
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
+text = "Active Particles:"
+
+[node name="Val" type="Label" parent="TelemetryPanel/VBox/RowParticles"]
+layout_mode = 2
+text = "0"
+
+[node name="RowEnergy" type="HBoxContainer" parent="TelemetryPanel/VBox"]
+layout_mode = 2
+
+[node name="Lbl" type="Label" parent="TelemetryPanel/VBox/RowEnergy"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
+text = "Kinetic Energy:"
+
+[node name="Val" type="Label" parent="TelemetryPanel/VBox/RowEnergy"]
+layout_mode = 2
+text = "0.00 J"
+
+[node name="RowWind" type="HBoxContainer" parent="TelemetryPanel/VBox"]
+layout_mode = 2
+
+[node name="Lbl" type="Label" parent="TelemetryPanel/VBox/RowWind"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
+text = "Wind Field:"
+
+[node name="Val" type="Label" parent="TelemetryPanel/VBox/RowWind"]
+layout_mode = 2
+text = "8.0 m/s @ 45°"
 
 [node name="PhysicsPanel" type="PanelContainer" parent="."]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -280.0
-offset_top = 240.0
-offset_right = -16.0
+offset_left = -270.0
+offset_top = 216.0
+offset_right = -12.0
 offset_bottom = 540.0
 grow_horizontal = 0
 
@@ -129,7 +265,8 @@ theme_override_constants/separation = 6
 
 [node name="Title" type="Label" parent="PhysicsPanel/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.3, 0.9, 1, 1)
+theme_override_colors/font_color = Color(0.35, 0.75, 1, 1)
+theme_override_font_sizes/font_size = 12
 text = "PHYSICS PARAMETERS"
 
 [node name="HSep" type="HSeparator" parent="PhysicsPanel/VBox"]
@@ -137,6 +274,7 @@ layout_mode = 2
 
 [node name="GravityBox" type="VBoxContainer" parent="PhysicsPanel/VBox"]
 layout_mode = 2
+theme_override_constants/separation = 2
 
 [node name="HBox" type="HBoxContainer" parent="PhysicsPanel/VBox/GravityBox"]
 layout_mode = 2
@@ -144,11 +282,14 @@ layout_mode = 2
 [node name="Lbl" type="Label" parent="PhysicsPanel/VBox/GravityBox/HBox"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.75, 0.75, 0.75, 1)
 text = "Gravity:"
 
 [node name="Val" type="Label" parent="PhysicsPanel/VBox/GravityBox/HBox"]
+custom_minimum_size = Vector2(80, 0)
 layout_mode = 2
-text = "-9.8 m/s^2"
+horizontal_alignment = 2
+text = "-9.8 m/s²"
 
 [node name="Slider" type="HSlider" parent="PhysicsPanel/VBox/GravityBox"]
 layout_mode = 2
@@ -159,6 +300,7 @@ value = -9.8
 
 [node name="WindSpeedBox" type="VBoxContainer" parent="PhysicsPanel/VBox"]
 layout_mode = 2
+theme_override_constants/separation = 2
 
 [node name="HBox" type="HBoxContainer" parent="PhysicsPanel/VBox/WindSpeedBox"]
 layout_mode = 2
@@ -166,10 +308,13 @@ layout_mode = 2
 [node name="Lbl" type="Label" parent="PhysicsPanel/VBox/WindSpeedBox/HBox"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.75, 0.75, 0.75, 1)
 text = "Wind Speed:"
 
 [node name="Val" type="Label" parent="PhysicsPanel/VBox/WindSpeedBox/HBox"]
+custom_minimum_size = Vector2(80, 0)
 layout_mode = 2
+horizontal_alignment = 2
 text = "8.0 m/s"
 
 [node name="Slider" type="HSlider" parent="PhysicsPanel/VBox/WindSpeedBox"]
@@ -180,6 +325,7 @@ value = 8.0
 
 [node name="WindDirBox" type="VBoxContainer" parent="PhysicsPanel/VBox"]
 layout_mode = 2
+theme_override_constants/separation = 2
 
 [node name="HBox" type="HBoxContainer" parent="PhysicsPanel/VBox/WindDirBox"]
 layout_mode = 2
@@ -187,11 +333,14 @@ layout_mode = 2
 [node name="Lbl" type="Label" parent="PhysicsPanel/VBox/WindDirBox/HBox"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.75, 0.75, 0.75, 1)
 text = "Wind Angle:"
 
 [node name="Val" type="Label" parent="PhysicsPanel/VBox/WindDirBox/HBox"]
+custom_minimum_size = Vector2(80, 0)
 layout_mode = 2
-text = "45 deg"
+horizontal_alignment = 2
+text = "45°"
 
 [node name="Slider" type="HSlider" parent="PhysicsPanel/VBox/WindDirBox"]
 layout_mode = 2
@@ -201,6 +350,7 @@ value = 45.0
 
 [node name="ViscosityBox" type="VBoxContainer" parent="PhysicsPanel/VBox"]
 layout_mode = 2
+theme_override_constants/separation = 2
 
 [node name="HBox" type="HBoxContainer" parent="PhysicsPanel/VBox/ViscosityBox"]
 layout_mode = 2
@@ -208,11 +358,14 @@ layout_mode = 2
 [node name="Lbl" type="Label" parent="PhysicsPanel/VBox/ViscosityBox/HBox"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.75, 0.75, 0.75, 1)
 text = "Fluid Viscosity:"
 
 [node name="Val" type="Label" parent="PhysicsPanel/VBox/ViscosityBox/HBox"]
+custom_minimum_size = Vector2(80, 0)
 layout_mode = 2
-text = "0.15"
+horizontal_alignment = 2
+text = "0.15 Pa·s"
 
 [node name="Slider" type="HSlider" parent="PhysicsPanel/VBox/ViscosityBox"]
 layout_mode = 2
@@ -223,6 +376,7 @@ value = 0.15
 
 [node name="WaveAmpBox" type="VBoxContainer" parent="PhysicsPanel/VBox"]
 layout_mode = 2
+theme_override_constants/separation = 2
 
 [node name="HBox" type="HBoxContainer" parent="PhysicsPanel/VBox/WaveAmpBox"]
 layout_mode = 2
@@ -230,10 +384,13 @@ layout_mode = 2
 [node name="Lbl" type="Label" parent="PhysicsPanel/VBox/WaveAmpBox/HBox"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.75, 0.75, 0.75, 1)
 text = "Wave Amplitude:"
 
 [node name="Val" type="Label" parent="PhysicsPanel/VBox/WaveAmpBox/HBox"]
+custom_minimum_size = Vector2(80, 0)
 layout_mode = 2
+horizontal_alignment = 2
 text = "0.8 m"
 
 [node name="Slider" type="HSlider" parent="PhysicsPanel/VBox/WaveAmpBox"]
@@ -242,98 +399,64 @@ max_value = 2.5
 step = 0.1
 value = 0.8
 
-[node name="VisToggles" type="PanelContainer" parent="."]
+[node name="TransportBar" type="PanelContainer" parent="."]
 layout_mode = 1
-anchors_preset = 12
+anchors_preset = 2
 anchor_top = 1.0
-anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 16.0
-offset_top = -120.0
-offset_right = -16.0
-offset_bottom = -72.0
-grow_horizontal = 2
+offset_top = -54.0
+offset_right = 370.0
+offset_bottom = -14.0
 grow_vertical = 0
 
-[node name="HBox" type="HBoxContainer" parent="VisToggles"]
-layout_mode = 2
-theme_override_constants/separation = 24
-alignment = 1
-
-[node name="CheckVelVectors" type="CheckBox" parent="VisToggles/HBox"]
-layout_mode = 2
-button_pressed = true
-text = "Velocity Vectors"
-
-[node name="CheckAccVectors" type="CheckBox" parent="VisToggles/HBox"]
-layout_mode = 2
-text = "Acceleration / Thrust"
-
-[node name="CheckStreamlines" type="CheckBox" parent="VisToggles/HBox"]
-layout_mode = 2
-button_pressed = true
-text = "Wind Streamlines"
-
-[node name="CheckClothStress" type="CheckBox" parent="VisToggles/HBox"]
-layout_mode = 2
-button_pressed = true
-text = "Stress Heatmap"
-
-[node name="ControlBar" type="PanelContainer" parent="."]
-layout_mode = 1
-anchors_preset = 12
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 16.0
-offset_top = -64.0
-offset_right = -16.0
-offset_bottom = -16.0
-grow_horizontal = 2
-grow_vertical = 0
-
-[node name="HBox" type="HBoxContainer" parent="ControlBar"]
-layout_mode = 2
-theme_override_constants/separation = 16
-alignment = 1
-
-[node name="BtnPlayPause" type="Button" parent="ControlBar/HBox"]
-custom_minimum_size = Vector2(110, 0)
-layout_mode = 2
-text = "PAUSE [||]"
-
-[node name="BtnStep" type="Button" parent="ControlBar/HBox"]
-custom_minimum_size = Vector2(90, 0)
-layout_mode = 2
-text = "STEP [>|]"
-
-[node name="BtnReset" type="Button" parent="ControlBar/HBox"]
-custom_minimum_size = Vector2(90, 0)
-layout_mode = 2
-text = "RESET [<<]"
-
-[node name="VSep" type="VSeparator" parent="ControlBar/HBox"]
-layout_mode = 2
-
-[node name="TimeScaleBox" type="HBoxContainer" parent="ControlBar/HBox"]
+[node name="HBox" type="HBoxContainer" parent="TransportBar"]
 layout_mode = 2
 theme_override_constants/separation = 8
+alignment = 0
 
-[node name="Lbl" type="Label" parent="ControlBar/HBox/TimeScaleBox"]
+[node name="BtnReset" type="Button" parent="TransportBar/HBox"]
+custom_minimum_size = Vector2(36, 28)
 layout_mode = 2
-text = "Time Scale:"
+tooltip_text = "Reset Simulation"
+text = "⏮"
 
-[node name="Slider" type="HSlider" parent="ControlBar/HBox/TimeScaleBox"]
-custom_minimum_size = Vector2(150, 0)
+[node name="BtnPlayPause" type="Button" parent="TransportBar/HBox"]
+custom_minimum_size = Vector2(36, 28)
 layout_mode = 2
+tooltip_text = "Play / Pause"
+text = "⏸"
+
+[node name="BtnStep" type="Button" parent="TransportBar/HBox"]
+custom_minimum_size = Vector2(36, 28)
+layout_mode = 2
+tooltip_text = "Step Next Frame"
+text = "⏭"
+
+[node name="VSep" type="VSeparator" parent="TransportBar/HBox"]
+layout_mode = 2
+
+[node name="TimeScaleBox" type="HBoxContainer" parent="TransportBar/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="Lbl" type="Label" parent="TransportBar/HBox/TimeScaleBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.75, 0.75, 1)
+text = "Speed:"
+
+[node name="Slider" type="HSlider" parent="TransportBar/HBox/TimeScaleBox"]
+layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 4
 min_value = 0.1
 max_value = 2.0
 step = 0.05
 value = 1.0
 
-[node name="Val" type="Label" parent="ControlBar/HBox/TimeScaleBox"]
-custom_minimum_size = Vector2(40, 0)
+[node name="Val" type="Label" parent="TransportBar/HBox/TimeScaleBox"]
+custom_minimum_size = Vector2(38, 0)
 layout_mode = 2
 text = "1.0x"
 
@@ -344,11 +467,11 @@ anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 16.0
-offset_top = -340.0
-offset_right = 360.0
-offset_bottom = -136.0
+offset_top = -320.0
+offset_right = 370.0
+offset_bottom = -64.0
 grow_vertical = 0
-script = ExtResource("2_model")
+script = ExtResource("3_model")
 
 [node name="VBox" type="VBoxContainer" parent="ModelLoaderPanel"]
 layout_mode = 2
@@ -356,7 +479,7 @@ theme_override_constants/separation = 8
 
 [node name="Title" type="Label" parent="ModelLoaderPanel/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.3, 0.9, 1, 1)
+theme_override_colors/font_color = Color(0.35, 0.75, 1, 1)
 text = "MODEL PIPELINE (.STL / .BLEND)"
 
 [node name="HSep" type="HSeparator" parent="ModelLoaderPanel/VBox"]
